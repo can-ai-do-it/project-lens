@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Project Lens — Ask anything about your device. Answers from the actual manual.">
+<title>Project Lens — Device Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ───────────── TOKENS ───────────── */
+:root {
+  --bg: #FAFAF8; --s1: #F4F1EC; --s2: #EDE9E2; --s3: #E0DCD4;
+  --b1: rgba(40,35,28,.07); --b2: rgba(40,35,28,.13); --b3: rgba(40,35,28,.20);
+  --t1: #1C1810; --t2: #6B6457; --t3: #A89F92;
+  --ac: #D97757; --ac-d: rgba(217,119,87,.12); --ac-g: rgba(217,119,87,.3);
+  --green: #16A34A; --grn-d: rgba(22,163,74,.10);
+  --blue: #2563EB; --blue-d: rgba(37,99,235,.10);
+  --red: #DC2626; --red-d: rgba(220,38,38,.10);
+  --purple: #7C3AED; --pur-d: rgba(124,58,237,.10);
+  --r: 16px; --rm: 12px; --rs: 8px;
+  --max: 480px;
+}
+/* ───────────── RESET ───────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--t1); font-family: 'Outfit', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; }
+
+/* ───────────── SHELL ───────────── */
+.app { position: fixed; inset: 0; max-width: var(--max); margin: 0 auto; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+@media(min-width: 520px) {
+  body { background: #E5E1D8; }
+  .app { border-radius: 32px; top: 12px; bottom: 12px; height: auto; box-shadow: 0 0 0 1px var(--b2), 0 20px 80px rgba(0,0,0,.2); overflow: hidden; }
+}
+
+/* ───────────── HEADER ───────────── */
+.hdr { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--b1); flex-shrink: 0; background: rgba(250,250,248,.96); backdrop-filter: blur(20px); }
+.logo-mark { width: 28px; height: 28px; border: 1.5px solid var(--ac); border-radius: 50%; display: grid; place-items: center; position: relative; box-shadow: 0 0 0 3px var(--ac-d); flex-shrink: 0; }
+.logo-mark::before { content: ''; width: 10px; height: 10px; border: 1.5px solid var(--ac); border-radius: 50%; }
+.logo-mark::after { content: ''; position: absolute; width: 4px; height: 4px; background: var(--ac); border-radius: 50%; }
+.logo-text { font-size: 16px; font-weight: 800; letter-spacing: .3px; white-space: nowrap; }
+.logo-text span { color: var(--ac); }
+.active-product { flex: 1; font-size: 13px; font-weight: 600; color: var(--t2); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+.active-product .prod-emoji { font-size: 17px; }
+.change-btn { font-size: 12px; color: var(--ac); font-weight: 600; padding: 5px 10px; border-radius: 6px; background: var(--ac-d); white-space: nowrap; flex-shrink: 0; }
+.change-btn:active { background: var(--ac); color: #fff; }
+
+/* ───────────── PRODUCT SELECTOR ───────────── */
+#product-selector { flex: 1; overflow-y: auto; padding: 20px 18px; scrollbar-width: none; }
+#product-selector::-webkit-scrollbar { display: none; }
+.sel-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.sel-sub { font-size: 14px; color: var(--t2); margin-bottom: 20px; line-height: 1.5; }
+
+/* API key setup */
+.api-setup { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--rm); padding: 16px; margin-bottom: 20px; }
+.api-setup label { font-size: 12px; font-weight: 600; color: var(--t2); display: block; margin-bottom: 6px; }
+.api-key-row { display: flex; gap: 8px; }
+.api-key-row input { flex: 1; padding: 10px 12px; background: #fff; border: 1.5px solid var(--b2); border-radius: var(--rs); font-size: 13px; color: var(--t1); outline: none; transition: border-color .15s; font-family: 'JetBrains Mono', monospace; }
+.api-key-row input:focus { border-color: var(--ac); }
+.api-key-row input::placeholder { color: var(--t3); font-size: 12px; }
+
+/* Product search */
+.prod-search { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid var(--b2); border-radius: var(--rm); padding: 0 14px; margin-bottom: 12px; box-shadow: 0 1px 4px var(--b1); }
+.prod-search:focus-within { border-color: var(--ac); }
+.prod-search svg { width: 16px; height: 16px; color: var(--t3); flex-shrink: 0; stroke-width: 2; }
+.prod-search input { flex: 1; padding: 12px 0; background: none; border: none; outline: none; font-size: 14px; color: var(--t1); }
+.prod-search input::placeholder { color: var(--t3); }
+
+/* Product list */
+#product-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.product-card { display: flex; align-items: center; gap: 12px; padding: 14px; background: #fff; border: 1px solid var(--b1); border-radius: var(--rm); cursor: pointer; transition: all .15s; box-shadow: 0 1px 4px var(--b1); }
+.product-card:hover { border-color: var(--ac); background: var(--ac-d); }
+.product-card:active { transform: scale(.98); }
+.prod-card-icon { font-size: 28px; flex-shrink: 0; }
+.prod-card-body { flex: 1; min-width: 0; }
+.prod-card-name { font-size: 14px; font-weight: 700; color: var(--t1); }
+.prod-card-cat { font-size: 11px; color: var(--t3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.prod-card-arrow { color: var(--t3); font-size: 20px; }
+
+/* PDF Upload */
+.section-label { font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--t3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--b1); }
+.pdf-dropzone { border: 2px dashed var(--b3); border-radius: var(--rm); padding: 24px; text-align: center; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; background: #fff; }
+.pdf-dropzone:hover, .pdf-dropzone.dragover { border-color: var(--ac); background: var(--ac-d); }
+.pdf-dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pdf-dropzone-icon { font-size: 28px; margin-bottom: 8px; }
+.pdf-dropzone-txt { font-size: 14px; font-weight: 600; color: var(--t2); margin-bottom: 4px; }
+.pdf-dropzone-sub { font-size: 12px; color: var(--t3); }
+.pdf-loading { display: none; align-items: center; gap: 12px; padding: 16px; background: var(--ac-d); border-radius: var(--rs); margin-top: 10px; }
+.pdf-loading-spin { width: 20px; height: 20px; border: 2px solid var(--s3); border-top-color: var(--ac); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#pdf-loading-msg { font-size: 13px; color: var(--t2); }
+
+/* ───────────── MAIN INTERFACE ───────────── */
+#main-interface { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+
+/* MODE SWITCHER */
+.mode-switcher { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--b1); flex-shrink: 0; background: var(--s1); }
+.mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: var(--rs); font-size: 13px; font-weight: 700; color: var(--t2); transition: all .2s; }
+.mode-btn:active { transform: scale(.97); }
+.mode-btn.active { background: #fff; color: var(--t1); box-shadow: 0 1px 6px var(--b1); }
+.mode-btn.active.read { color: var(--blue); }
+.mode-btn.active.watch { color: var(--purple); }
+.mode-btn.active.talk { color: var(--green); }
+.mode-btn .mode-icon { font-size: 16px; }
+.mode-label { display: none; }
+@media(min-width: 360px) { .mode-label { display: inline; } }
+
+/* ───────────── READ MODE ───────────── */
+[data-mode="read"] { flex-direction: column; flex: 1; overflow: hidden; }
+.read-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none; }
+.read-messages::-webkit-scrollbar { display: none; }
+.message { max-width: 92%; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.65; }
+.message.user { align-self: flex-end; background: var(--ac); color: #fff; border-radius: 14px 14px 4px 14px; }
+.message.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--b1); box-shadow: 0 1px 4px var(--b1); border-radius: 4px 14px 14px 14px; }
+.message.assistant strong { color: var(--t1); }
+.msg-citation { margin-top: 10px; padding: 8px 10px; background: var(--blue-d); border-radius: var(--rx, 5px); font-size: 12px; color: var(--blue); font-family: 'JetBrains Mono', monospace; border: 1px solid rgba(37,99,235,.15); }
+.view-source-btn { display: block; margin-top: 10px; padding: 6px 12px; background: var(--s1); border: 1px solid var(--b2); border-radius: 6px; font-size: 12px; color: var(--t2); font-weight: 600; cursor: pointer; transition: all .15s; }
+.view-source-btn:hover { background: var(--s2); color: var(--t1); }
+.source-panel { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.source-chunk { background: var(--s1); border: 1px solid var(--b1); border-radius: 8px; padding: 10px 12px; }
+.source-ref { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--ac); margin-bottom: 5px; font-weight: 600; }
+.source-text { font-size: 12px; color: var(--t2); line-height: 1.6; }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px 24px; text-align: center; gap: 10px; }
+.empty-icon { font-size: 40px; opacity: .2; }
+.empty-msg { font-size: 14px; color: var(--t2); line-height: 1.5; max-width: 240px; }
+.read-input-bar { padding: 12px 16px; border-top: 1px solid var(--b1); display: flex; gap: 10px; background: rgba(250,250,248,.97); backdrop-filter: blur(16px); flex-shrink: 0; }
+.read-input-bar input { flex: 1; padding: 12px 14px; background: #fff; border: 1.5px solid var(--b2); border-radius: var(--rm); font-size: 14px; color: var(--t1); outline: none; transition: border-color .15s, box-shadow .15s; }
+.read-input-bar input:focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--ac-d); }
+.read-input-bar input::placeholder { color: var(--t3); }
+.send-btn { width: 46px; height: 46px; background: var(--ac); color: #fff; border-radius: var(--rm); display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 2px 8px var(--ac-g); transition: all .15s; }
+.send-btn:active { transform: scale(.94); }
+.send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.send-btn svg { width: 18px; height: 18px; stroke-width: 2.2; }
+
+/* ───────────── WATCH MODE ───────────── */
+[data-mode="watch"] { flex-direction: column; flex: 1; overflow: hidden; }
+.watch-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: none; }
+.watch-body::-webkit-scrollbar { display: none; }
+.vm-screen { position: relative; background: #0C0A08; width: 100%; aspect-ratio: 16/9; overflow: hidden; flex-shrink: 0; }
+.vm-layer { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.vm-layer.active { opacity: 1; }
+.vm-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12); border-radius: 20px; font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: rgba(255,255,255,.6); letter-spacing: 1px; pointer-events: none; }
+.vm-speaking { position: absolute; top: 10px; right: 10px; display: none; align-items: center; gap: 2px; padding: 4px 8px; background: rgba(124,58,237,.25); border: 1px solid rgba(124,58,237,.4); border-radius: 20px; }
+.vm-speaking.on { display: flex; }
+.vm-wave { width: 2px; background: var(--purple); border-radius: 1px; animation: wave .6s ease-in-out infinite; }
+.vm-wave:nth-child(1){height:6px}.vm-wave:nth-child(2){height:10px;animation-delay:.1s}.vm-wave:nth-child(3){height:14px;animation-delay:.2s}.vm-wave:nth-child(4){height:10px;animation-delay:.3s}.vm-wave:nth-child(5){height:6px;animation-delay:.4s}
+@keyframes wave{0%,100%{transform:scaleY(.5);opacity:.5}50%{transform:scaleY(1);opacity:1}}
+.vm-sub-bar { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 14px 8px; background: linear-gradient(transparent, rgba(0,0,0,.85)); pointer-events: none; }
+.vm-caption { display: block; font-size: 13px; font-weight: 500; color: #fff; line-height: 1.5; text-align: center; text-shadow: 0 1px 6px rgba(0,0,0,.8); opacity: 0; transition: opacity .3s; }
+.vm-caption.on { opacity: 1; }
+.vm-loading { position: absolute; inset: 0; background: rgba(12,10,8,.92); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 5; }
+.vm-loading-ring { width: 38px; height: 38px; border: 2px solid rgba(124,58,237,.2); border-top-color: var(--purple); border-radius: 50%; animation: spin .7s linear infinite; }
+.vm-loading-txt { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--purple); letter-spacing: 2px; animation: flicker 1.2s ease infinite; }
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.3}}
+.vm-loading-sub { font-size: 12px; color: rgba(255,255,255,.3); }
+.vid-meta { padding: 10px 16px 0; flex-shrink: 0; }
+.vid-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vid-title { font-size: 14px; font-weight: 700; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vid-citation-badge { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--blue); background: var(--blue-d); padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+.vm-frames-wrap { padding: 8px 16px 0; flex-shrink: 0; }
+.vm-frames-lbl { font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--t3); letter-spacing: 1.5px; margin-bottom: 6px; text-transform: uppercase; }
+.vm-frames { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.vm-frames::-webkit-scrollbar { display: none; }
+.vf-chip { flex-shrink: 0; padding: 7px 10px; background: #fff; border: 1px solid var(--b2); border-radius: 5px; cursor: pointer; transition: all .15s; max-width: 120px; box-shadow: 0 1px 3px var(--b1); }
+.vf-chip.active { background: var(--pur-d); border-color: var(--purple); }
+.vf-chip:active { transform: scale(.96); }
+.vf-num { font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--t3); margin-bottom: 2px; }
+.vf-chip.active .vf-num { color: var(--purple); }
+.vf-name { font-size: 11px; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vm-controls { display: flex; align-items: center; gap: 8px; padding: 8px 16px 12px; border-top: 1px solid var(--b1); background: var(--bg); flex-shrink: 0; margin-top: auto; }
+.vm-ctrl { width: 34px; height: 34px; background: var(--s1); border-radius: 50%; display: grid; place-items: center; font-size: 12px; border: 1px solid var(--b2); transition: all .15s; }
+.vm-ctrl.play { background: var(--purple); color: #fff; width: 42px; height: 42px; font-size: 14px; box-shadow: 0 3px 12px rgba(124,58,237,.3); border-color: transparent; }
+.vm-ctrl.play:active { transform: scale(.93); }
+.vm-ctrl:active { opacity: .7; }
+.vm-progress { flex: 1; }
+.vm-prog-bar { height: 3px; background: var(--s3); border-radius: 2px; overflow: hidden; cursor: pointer; margin-bottom: 5px; }
+.vm-prog-fill { height: 100%; background: linear-gradient(90deg, var(--purple), #9B6AFF); transition: width .4s linear; border-radius: 2px; }
+.vm-time { display: flex; justify-content: space-between; font-size: 9px; font-family: 'JetBrains Mono', monospace; color: var(--t3); }
+.vm-speed { padding: 5px 8px; background: var(--s1); border: 1px solid var(--b2); border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; appearance: none; }
+.watch-prompt { padding: 12px 16px; border-top: 1px solid var(--b1); display: flex; gap: 10px; background: var(--bg); flex-shrink: 0; }
+.watch-prompt input { flex: 1; padding: 11px 13px; background: #fff; border: 1.5px solid var(--b2); border-radius: var(--rm); font-size: 14px; color: var(--t1); outline: none; transition: border-color .15s; }
+.watch-prompt input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--pur-d); }
+.watch-prompt input::placeholder { color: var(--t3); }
+.watch-go-btn { padding: 11px 16px; background: var(--purple); color: #fff; border-radius: var(--rm); font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 8px rgba(124,58,237,.3); transition: all .15s; flex-shrink: 0; }
+.watch-go-btn:active { transform: scale(.96); }
+.watch-go-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.watch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 10px; padding: 32px; text-align: center; }
+
+/* ───────────── TALK MODE ───────────── */
+[data-mode="talk"] { flex-direction: column; flex: 1; overflow: hidden; }
+.talk-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+.talk-messages::-webkit-scrollbar { display: none; }
+.talk-msg { max-width: 88%; padding: 11px 14px; border-radius: 14px; font-size: 14px; line-height: 1.6; }
+.talk-msg.user { align-self: flex-end; background: var(--ac); color: #fff; border-radius: 14px 14px 4px 14px; }
+.talk-msg.assistant { align-self: flex-start; background: #fff; border: 1px solid var(--b1); box-shadow: 0 1px 4px var(--b1); border-radius: 4px 14px 14px 14px; }
+.talk-controls { padding: 16px; border-top: 1px solid var(--b1); display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--s1); flex-shrink: 0; }
+.talk-speaking-ind { display: none; align-items: center; gap: 4px; }
+.talk-speaking-ind.on { display: flex; }
+.mic-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mic-btn { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; transition: all .2s; position: relative; }
+.mic-btn.idle { background: #fff; border: 2px solid var(--b2); box-shadow: 0 2px 12px var(--b1); }
+.mic-btn.listening { background: var(--red); border-color: var(--red); box-shadow: 0 0 0 8px rgba(220,38,38,.15), 0 4px 16px rgba(220,38,38,.3); animation: pulse-mic 1.2s ease-in-out infinite; }
+.mic-btn.thinking { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 8px var(--grn-d), 0 4px 16px rgba(22,163,74,.3); }
+@keyframes pulse-mic { 0%,100%{box-shadow:0 0 0 8px rgba(220,38,38,.15),0 4px 16px rgba(220,38,38,.3)} 50%{box-shadow:0 0 0 16px rgba(220,38,38,.08),0 4px 20px rgba(220,38,38,.25)} }
+#mic-label { font-size: 12px; color: var(--t2); font-weight: 600; text-align: center; }
+#talk-transcript-live { font-size: 13px; color: var(--t2); font-style: italic; text-align: center; min-height: 18px; transition: opacity .2s; max-width: 280px; }
+.talk-actions { display: flex; gap: 10px; }
+.talk-action-btn { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; background: #fff; border: 1px solid var(--b2); color: var(--t2); transition: all .15s; }
+.talk-action-btn:active { background: var(--s2); }
+#talk-text-fallback { display: none; width: 100%; gap: 8px; }
+#talk-text-fallback input { flex: 1; padding: 10px 12px; background: #fff; border: 1.5px solid var(--b2); border-radius: var(--rs); font-size: 13px; outline: none; }
+#talk-text-fallback input:focus { border-color: var(--green); }
+#talk-text-fallback button { padding: 10px 14px; background: var(--green); color: #fff; border-radius: var(--rs); font-size: 13px; font-weight: 700; }
+.talk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; }
+.talk-empty p { font-size: 13px; color: var(--t2); line-height: 1.5; max-width: 220px; }
+
+/* ───────────── TOAST ───────────── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); max-width: calc(var(--max) - 32px); width: calc(100% - 32px); padding: 12px 16px; background: #1C1810; color: #fff; border-radius: var(--rm); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; z-index: 999; box-shadow: 0 8px 32px rgba(0,0,0,.3); transition: transform .3s cubic-bezier(.34,1.56,.64,1); pointer-events: none; }
+.toast.on { transform: translateX(-50%) translateY(0); }
+.toast.error #toast-icon { color: #F87171; }
+.toast.success #toast-icon { color: #34D399; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="logo-mark" aria-hidden="true"></div>
+    <span class="logo-text">Project<span>Lens</span></span>
+    <div class="active-product" id="active-product"></div>
+    <button class="change-btn" onclick="document.getElementById('product-selector').style.display='block';document.getElementById('main-interface').style.display='none'" aria-label="Change product">Change</button>
+  </header>
+
+  <!-- PRODUCT SELECTOR -->
+  <div id="product-selector">
+    <div class="sel-title">What device do you need help with?</div>
+    <p class="sel-sub">Select a product or upload your manual PDF. Ask anything in plain English — answers come directly from the manufacturer manual, with exact source citations.</p>
+
+    <!-- API Key -->
+    
+
+    <!-- Search -->
+    <div class="prod-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="product-search" placeholder="Search products…" autocomplete="off" aria-label="Search products">
+    </div>
+
+    <!-- Product list -->
+    <div id="product-list"></div>
+
+    <!-- PDF Upload -->
+    <div class="section-label">Or upload any manual PDF</div>
+    <div class="pdf-dropzone" id="pdf-dropzone" role="button" aria-label="Upload PDF manual" tabindex="0">
+      <input type="file" id="pdf-file-input" accept=".pdf" aria-hidden="true">
+      <div class="pdf-dropzone-icon">📄</div>
+      <div class="pdf-dropzone-txt">Drop your manual PDF here</div>
+      <div class="pdf-dropzone-sub">Or tap to browse · Works with any product manual</div>
+    </div>
+    <div class="pdf-loading" id="pdf-loading">
+      <div class="pdf-loading-spin"></div>
+      <div id="pdf-loading-msg">Reading PDF…</div>
+    </div>
+  </div>
+
+  <!-- MAIN INTERFACE -->
+  <div id="main-interface">
+
+    <!-- MODE SWITCHER -->
+    <div class="mode-switcher" role="tablist" aria-label="Response mode">
+      <button class="mode-btn read active" data-mode="read" role="tab" aria-selected="true" aria-label="Read mode — text answers with citations">
+        <span class="mode-icon">📖</span>
+        <span class="mode-label">Read</span>
+      </button>
+      <button class="mode-btn watch" data-mode="watch" role="tab" aria-selected="false" aria-label="Watch mode — video tutorial">
+        <span class="mode-icon">🎬</span>
+        <span class="mode-label">Watch</span>
+      </button>
+      <button class="mode-btn talk" data-mode="talk" role="tab" aria-selected="false" aria-label="Talk mode — voice conversation">
+        <span class="mode-icon">🎙️</span>
+        <span class="mode-label">Talk</span>
+      </button>
+    </div>
+
+    <!-- READ PANEL -->
+    <div class="mode-panel" data-mode="read" style="display:flex">
+      <div id="read-messages" class="read-messages">
+        <div class="empty-state">
+          <div class="empty-icon">📖</div>
+          <div class="empty-msg">Ask anything about your device in plain English. Every answer is cited to the exact manual section.</div>
+        </div>
+      </div>
+      <form class="read-input-bar" id="read-form">
+        <input type="text" id="read-input" placeholder="How do I set back-button focus?" autocomplete="off" aria-label="Ask a question">
+        <button type="submit" class="send-btn" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- WATCH PANEL -->
+    <div class="mode-panel" data-mode="watch" style="display:none">
+      <div class="watch-body">
+        <div class="vm-screen">
+          <div class="vm-loading" id="vm-loading">
+            <div class="vm-loading-ring"></div>
+            <div class="vm-loading-txt">GENERATING TUTORIAL…</div>
+            <div class="vm-loading-sub">Building HD frames from your manual</div>
+          </div>
+          <svg id="vm-svg-a" class="vm-layer active" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <rect width="640" height="360" fill="#0C0A08"/>
+            <text x="320" y="180" text-anchor="middle" fill="rgba(255,255,255,.15)" font-family="'Outfit',system-ui" font-size="18">Ask a question below to generate a video tutorial</text>
+          </svg>
+          <svg id="vm-svg-b" class="vm-layer" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="vm-badge" id="vm-badge">— / —</div>
+          <div class="vm-speaking" id="vm-speaking">
+            <div class="vm-wave"></div><div class="vm-wave"></div><div class="vm-wave"></div><div class="vm-wave"></div><div class="vm-wave"></div>
+          </div>
+          <div class="vm-sub-bar"><span class="vm-caption" id="vm-caption"></span></div>
+        </div>
+        <div class="vid-meta">
+          <div class="vid-title-row">
+            <div class="vid-title" id="vid-title">Generate a tutorial below</div>
+            <div class="vid-citation-badge" id="vid-citation"></div>
+          </div>
+        </div>
+        <div class="vm-frames-wrap">
+          <div class="vm-frames-lbl">TUTORIAL FRAMES</div>
+          <div class="vm-frames" id="vid-frames">
+            <div style="font-size:12px;color:var(--t3);padding:8px">Frames appear after generation</div>
+          </div>
+        </div>
+        <div class="vm-controls">
+          <button class="vm-ctrl play" id="vid-play-btn" onclick="toggleVidPlay()" aria-label="Play/Pause">▶</button>
+          <button class="vm-ctrl" onclick="skipVidFrame(-1)" aria-label="Previous frame">⏮</button>
+          <button class="vm-ctrl" onclick="skipVidFrame(1)" aria-label="Next frame">⏭</button>
+          <div class="vm-progress">
+            <div class="vm-prog-bar" onclick="seekVid(event)"><div class="vm-prog-fill" id="vid-prog-fill" style="width:0%"></div></div>
+            <div class="vm-time"><span id="vid-time-cur">0:00</span><span id="vid-time-tot">0:00</span></div>
+          </div>
+          <select class="vm-speed" onchange="changeVidSpeed(this.value)" aria-label="Speed">
+            <option value="1">1×</option><option value="1.5">1.5×</option><option value="0.5">0.5×</option>
+          </select>
+          <button class="vm-ctrl" onclick="toggleVoiceOutput()" id="voice-toggle" title="Toggle voice" aria-label="Toggle voiceover">🔊</button>
+        </div>
+      </div>
+      <form class="watch-prompt" id="watch-form">
+        <input type="text" id="watch-input" placeholder="e.g. How do I descale the steam generator?" autocomplete="off" aria-label="Tutorial topic">
+        <button type="submit" class="watch-go-btn" aria-label="Generate video">▶ Generate</button>
+      </form>
+    </div>
+
+    <!-- TALK PANEL -->
+    <div class="mode-panel" data-mode="talk" style="display:none">
+      <div id="talk-messages" class="talk-messages">
+        <div class="talk-empty">
+          <div style="font-size:40px">🎙️</div>
+          <p>Tap the mic and speak naturally. I'll answer from your product manual — like having a tech support specialist who's actually read it.</p>
+        </div>
+      </div>
+      <div class="talk-controls">
+        <!-- Live transcript -->
+        <div id="talk-transcript-live" aria-live="polite"></div>
+        <!-- Speaking indicator -->
+        <div class="talk-speaking-ind" id="talk-speaking-ind">
+          <div class="vm-wave"></div><div class="vm-wave"></div><div class="vm-wave"></div>
+          <span style="font-size:11px;color:var(--purple);margin-left:4px">Speaking…</span>
+        </div>
+        <!-- Mic button -->
+        <div class="mic-area">
+          <button class="mic-btn idle" id="mic-btn" onclick="toggleMic()" aria-label="Tap to speak" aria-pressed="false">🎙️</button>
+          <div id="mic-label">Tap to speak</div>
+        </div>
+        <!-- Action row -->
+        <div class="talk-actions">
+          <button class="talk-action-btn" onclick="toggleVoiceOutput()" id="talk-voice-btn" aria-label="Toggle voice response">🔊 Voice</button>
+          <button class="talk-action-btn" onclick="talkConversation=[];lastTalkChunks=[];talkContextKeywords=new Set();document.getElementById('talk-messages').innerHTML='<div class=talk-empty><div style=font-size:40px>🎙️</div><p>New conversation started.</p></div>'" aria-label="Clear conversation">🔄 Clear</button>
+          <button class="talk-action-btn" onclick="stopSpeech()" aria-label="Stop speaking">⏹ Stop</button>
+        </div>
+        <!-- Text fallback -->
+        <form id="talk-text-fallback" id="talk-text-form" style="display:none">
+          <input type="text" id="talk-text-input" placeholder="Type your question…" autocomplete="off" aria-label="Type question">
+          <button type="submit" aria-label="Send">→</button>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /main-interface -->
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <span id="toast-icon">ℹ</span>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- KNOWLEDGE BASE + APP LOGIC -->
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PROJECT LENS — KNOWLEDGE BASE
+// Pre-processed manual chunks for seeded products.
+// Each chunk mirrors how real manual text would be extracted:
+// product, section, page, and verbatim-style content.
+// ═══════════════════════════════════════════════════════════════
+
+window.KNOWLEDGE_BASE = {
+
+  // ─────────────────────────────────────────────────────────────
+  // PRODUCT REGISTRY
+  // ─────────────────────────────────────────────────────────────
+  products: [
+    {
+      id: 'fuji-xe3',
+      name: 'Fujifilm X-E3',
+      category: 'Camera',
+      emoji: '📷',
+      brand: 'Fujifilm',
+      model: 'X-E3',
+      manual_source: 'Fujifilm X-E3 Owner\'s Manual (Rev. 1.10)',
+      tags: ['camera', 'mirrorless', 'fujifilm', 'photography', 'x-e3', 'fuji']
+    },
+    {
+      id: 'elux-kodgh70',
+      name: 'Electrolux KODGH70TXA',
+      category: 'Oven',
+      emoji: '🍳',
+      brand: 'Electrolux',
+      model: 'KODGH70TXA',
+      manual_source: 'Electrolux KODGH70TXA User Manual (EN)',
+      tags: ['oven', 'steam', 'cooking', 'electrolux', 'kitchen', 'steamoven']
+    }
+  ],
+
+  // ─────────────────────────────────────────────────────────────
+  // FUJIFILM X-E3 — MANUAL CHUNKS
+  // ─────────────────────────────────────────────────────────────
+  chunks: {
+    'fuji-xe3': [
+
+      // ── AUTOFOCUS ──
+      { id: 'f1', section: 'Autofocus Settings', page: 68, heading: 'Shutter AF',
+        text: 'Shutter AF controls whether the camera focuses when the shutter button is pressed halfway. Select ON to focus when the shutter button is pressed halfway. Select OFF to disable autofocus on shutter half-press. When set to OFF, autofocus is controlled exclusively by the AF-L button or other assigned control. This setting is found under MENU/OK > WRENCH (Setup) > BUTTON/DIAL SETTING > AF/MF SETTING > SHUTTER AF.' },
+
+      { id: 'f2', section: 'Autofocus Settings', page: 69, heading: 'Back-Button Focus Setup',
+        text: 'To configure back-button focus: (1) Set SHUTTER AF to OFF under AF/MF SETTING. (2) Navigate to BUTTON/DIAL SETTING > AE/AF-LOCK BUTTON. (3) Change the AF-L button assignment to AF-ON. With this configuration, pressing AF-L activates autofocus while the shutter button only controls exposure metering and shutter release. This separates focus from exposure, allowing you to lock focus independently.' },
+
+      { id: 'f3', section: 'Autofocus Settings', page: 72, heading: 'AF-C Custom Settings',
+        text: 'AF-C CUSTOM SETTINGS allows adjustment of autofocus tracking behaviour in continuous focus mode. TRACKING SENSITIVITY: Controls how readily the camera refocuses on a new subject. LOCKED ON resists switching to new subjects (recommended for sports). RESPONSIVE switches quickly to new subjects. SPEED TRACKING: Controls tracking of subjects that change speed rapidly. Set higher values for subjects with sudden speed changes. ZONE AREA SWITCHING: FRONT PRIORITY favours subjects moving toward the camera.' },
+
+      { id: 'f4', section: 'Autofocus Settings', page: 74, heading: 'Face and Eye Detection',
+        text: 'FACE/EYE DETECTION SETTING enables automatic detection of human faces and eyes. Navigate to MENU > AF/MF SETTING > FACE/EYE DETECTION SETTING. Set FACE DETECTION to ON. For eye tracking, set EYE DETECTION AF to AUTO (camera selects nearest eye) or RIGHT/LEFT (selects specific eye). Face detection works in all focus modes. For best tracking of moving subjects, use with Focus Mode set to C (Continuous AF).' },
+
+      { id: 'f5', section: 'Autofocus Settings', page: 76, heading: 'Manual Focus Assist',
+        text: 'Manual focus assist tools: DIGITAL SPLIT IMAGE shows a split image in the centre of the display that aligns when focus is achieved (similar to a rangefinder). FOCUS PEAKING highlights in-focus edges with a coloured outline. Colour can be set to WHITE, RED, or BLUE. STANDARD shows a magnified central region for precise focus checking. To cycle through MF assist modes, press the centre of the focus lever during manual focus. Focus assist is activated automatically when the focus ring is rotated.' },
+
+      // ── FILM SIMULATIONS ──
+      { id: 'f6', section: 'Image Quality', page: 89, heading: 'Film Simulation',
+        text: 'FILM SIMULATION reproduces the colour characteristics of film. The X-E3 offers 18 film simulations. PROVIA/STANDARD: Balanced colour, suitable for general shooting. VELVIA/VIVID: Highly saturated, vivid colour ideal for landscapes and nature. ASTIA/SOFT: Muted tones with soft skin rendering for portraits. CLASSIC CHROME: Subdued colours with muted greens and warm shadows, ideal for documentary and travel. CLASSIC NEG: Rich shadows with faded highlights, inspired by consumer negative film. ETERNA/CINEMA: Low contrast, desaturated look optimised for video. ACROS: Black and white with fine grain and rich tonal gradation. Film Simulation is accessible via the Q (Quick) Menu, MENU, or by assigning it to a function button.' },
+
+      { id: 'f7', section: 'Image Quality', page: 91, heading: 'Grain Effect',
+        text: 'GRAIN EFFECT adds simulated film grain to JPEG images. Settings: OFF, WEAK, STRONG. GRAIN SIZE can be set to SMALL or LARGE. Large grain combined with STRONG gives the appearance of a fast, pushed film stock. Grain is most visible in flat areas such as skies and skin tones. Grain Effect is applied to JPEGs in-camera and is also reflected in the EVF/LCD preview.' },
+
+      { id: 'f8', section: 'Image Quality', page: 92, heading: 'Colour Chrome Effect',
+        text: 'COLOUR CHROME EFFECT adds depth and detail to saturated colours by applying a tonal shift. Set to WEAK or STRONG. Most effective with highly saturated subjects such as red, orange, and green. COLOUR CHROME FX BLUE adds tonality and depth specifically to blue tones, useful for skies and water. Both effects are applied to JPEGs and can be previewed on the LCD.' },
+
+      { id: 'f9', section: 'Image Quality', page: 95, heading: 'Dynamic Range Settings',
+        text: 'DYNAMIC RANGE settings extend highlight recovery. DR100: Standard dynamic range. DR200: Approximately 1 stop of additional highlight recovery. Minimum ISO 400 required. DR400: Approximately 2 stops of additional highlight recovery. Minimum ISO 800 required. AUTO: Camera selects DR setting based on scene. DR settings expand the usable highlight range by underexposing the sensor and brightening shadows in processing. When DR200 or DR400 is selected, ISO cannot be set below the minimum required value.' },
+
+      // ── RAW / IMAGE FORMAT ──
+      { id: 'f10', section: 'Shooting Settings', page: 55, heading: 'Image Quality and Size',
+        text: 'IMAGE QUALITY settings determine the file format and compression. RAW: Records uncompressed RAW (RAF) files. All image adjustments including Film Simulation, White Balance, and tone settings can be changed in post using Fujifilm X RAW Studio or Lightroom. RAW+JPEG FINE: Records both a RAW file and a high-quality JPEG simultaneously. JPEG FINE / JPEG NORMAL: Records JPEG only, with image settings baked in. RAW files are approximately 25-32MB per image. Navigate to MENU > IMAGE QUALITY SETTING > IMAGE QUALITY.' },
+
+      // ── CONNECTIVITY ──
+      { id: 'f11', section: 'Connectivity', page: 142, heading: 'Bluetooth Pairing',
+        text: 'To pair the X-E3 with a smartphone: (1) Install Fujifilm Camera Remote on your smartphone (available on App Store and Google Play). (2) On the camera, navigate to MENU > WRENCH > CONNECTION SETTING > BLUETOOTH SETTINGS > PAIRING REGISTRATION. (3) On the smartphone, open Fujifilm Camera Remote and follow the pairing instructions. Once paired, the camera will appear in the app. Bluetooth must be enabled on both devices.' },
+
+      { id: 'f12', section: 'Connectivity', page: 144, heading: 'Auto Image Transfer',
+        text: 'AUTO IMAGE TRANSFER automatically sends images to the paired smartphone as they are taken. Enable via MENU > WRENCH > CONNECTION SETTING > BLUETOOTH SETTINGS > AUTO IMAGE TRANSFER > ON. Images are transferred in the background. Only JPEG files are transferred automatically; RAW files must be transferred manually. Image transfer requires the Fujifilm Camera Remote app to be running on the smartphone.' },
+
+      // ── EXPOSURE ──
+      { id: 'f13', section: 'Exposure', page: 38, heading: 'Exposure Compensation',
+        text: 'EXPOSURE COMPENSATION adjusts the exposure set by the camera in auto and semi-auto modes. Turn the exposure compensation dial (marked with +/- symbol on the top plate) to adjust. Range is -5.0 EV to +5.0 EV in 1/3 EV increments. In Manual mode, exposure compensation has no effect unless ISO is set to AUTO. Press and hold the centre of the FOCUS LEVER while rotating the rear command dial to adjust exposure compensation when the dial is set to C (Command).' },
+
+      { id: 'f14', section: 'Exposure', page: 42, heading: 'Metering Modes',
+        text: 'The X-E3 offers four metering modes: MULTI: Evaluates the entire frame and optimises for the subject and background. Recommended for most situations. SPOT: Meters a small area at the selected focus point. Use for high-contrast scenes or when precise exposure of a specific area is needed. AVERAGE: Averages exposure across the entire frame, ignoring bright highlights. CENTRE WEIGHTED: Weights exposure toward the centre of the frame. Change metering mode via MENU > AF/MF SETTING > PHOTOMETRY or by assigning to a function button.' },
+
+      // ── SHUTTER ──
+      { id: 'f15', section: 'Shutter Settings', page: 48, heading: 'Electronic Shutter',
+        text: 'SHUTTER TYPE controls whether the camera uses the mechanical shutter, electronic shutter, or both. Navigate to MENU > SHOOTING SETTING > SHUTTER TYPE. MS (Mechanical Shutter): Standard operation, suitable for all situations. ES (Electronic Shutter): Completely silent operation. Maximum shutter speed 1/32000 second. Allows shooting without mechanical vibration. Note: Rolling shutter distortion may occur with fast-moving subjects or under flickering artificial light. MS+ES: Uses mechanical shutter when possible; switches to electronic for speeds beyond 1/4000 second.' },
+
+      { id: 'f16', section: 'Shutter Settings', page: 51, heading: 'Long Exposure and Bulb Mode',
+        text: 'For shutter speeds longer than 30 seconds, set the shutter speed dial to T (Time). In T mode, pressing the shutter button once opens the shutter; pressing again closes it. Use a remote release cable (Fujifilm RR-100 or compatible) to avoid camera shake. LONG EXPOSURE NR (Noise Reduction) is recommended for exposures longer than 1 second. When enabled, the camera takes a second dark frame of equal duration and subtracts it from the original to reduce hot pixels. This doubles the total exposure time.' },
+
+      // ── CUSTOM SETTINGS ──
+      { id: 'f17', section: 'Custom Settings', page: 112, heading: 'Custom Presets C1 C2 C3',
+        text: 'CUSTOM PRESETS allow you to save the complete camera configuration to three memory positions (C1, C2, C3) for instant recall. To save: configure all camera settings as desired, then navigate to MENU > SHOOTING SETTING > EDIT/SAVE CUSTOM SETTING, select the custom position (C1, C2, or C3), and select OK. To recall: rotate the top DRIVE dial to C1, C2, or C3. All saved settings are immediately applied including Film Simulation, White Balance, ISO, Autofocus mode, and image quality.' },
+
+      { id: 'f18', section: 'Custom Settings', page: 115, heading: 'Q Menu Customisation',
+        text: 'The Q MENU provides quick access to frequently used settings. The Q Menu has 16 assignable slots. To customise: press and hold the Q button for 2 seconds until the edit indicator appears, or navigate to MENU > WRENCH > SCREEN SETTING > Q MENU SETTING. Navigate to any slot and press MENU/OK to change the assigned function. Press DISP/BACK to exit and save. Changes take effect immediately. Recommended Q Menu assignments: Film Simulation, ISO, White Balance, AF Mode, Image Quality, and Grain Effect.' },
+
+      { id: 'f19', section: 'Custom Settings', page: 118, heading: 'Function Button Assignment',
+        text: 'Function buttons (Fn1 through Fn7) can be customised to any of over 60 functions. To assign: MENU > WRENCH > BUTTON/DIAL SETTING > FUNCTION (Fn) SETTING. Select the button to customise, then select from the list of assignable functions. On the X-E3 body, Fn1-Fn4 are accessible on the rear. The shutter button can be assigned a half-press function. Front command dial and rear command dial can be assigned directional functions. Custom assignments are saved as part of Custom Presets.' },
+
+      // ── MENU NAVIGATION ──
+      { id: 'f20', section: 'Menu Navigation', page: 22, heading: 'MY MENU',
+        text: 'MY MENU is a customisable menu that appears as the first tab (star icon) in the main menu. It allows quick access to up to 16 frequently used menu items from any menu location. To add an item to MY MENU: navigate to the item in the main menu, press and hold MENU/OK, and select ADD TO MY MENU. To reorder or delete items: navigate to the star icon tab, press MENU/OK, and select EDIT/DELETE. To access MY MENU directly on startup: MENU > WRENCH > SCREEN SETTING > MY MENU SETTING > START FROM MY MENU > ON.' },
+
+      // ── VIDEO ──
+      { id: 'f21', section: 'Video Recording', page: 128, heading: '4K Video Recording',
+        text: 'The X-E3 records video at up to 4K (3840 x 2160) at 30fps, or Full HD (1920 x 1080) at up to 60fps. To access video recording: rotate the DRIVE dial to the movie camera icon. Video settings are configured under MENU > MOVIE SETTING. Movie Mode selects resolution and frame rate. For video intended for colour grading, set Film Simulation to ETERNA/CINEMA and enable F-Log recording under MOVIE SETTING > F-LOG RECORDING. F-Log provides maximum dynamic range but requires a LUT to be applied in post-production.' },
+
+      // ── SENSOR CARE ──
+      { id: 'f22', section: 'Maintenance', page: 160, heading: 'Sensor Cleaning',
+        text: 'Dust on the sensor appears as dark spots in images, particularly visible at small apertures (f/11 or smaller). To check for sensor dust: set aperture to f/16 and photograph a plain white or grey surface. Zoom to 100% in playback and inspect for dark spots. PIXEL MAPPING (MENU > WRENCH > PIXEL MAPPING) corrects stuck or hot pixels electronically and does not clean physical dust. For physical dust removal, use a hand-operated air blower (Rocket Blower type). Never use compressed air. For stubborn spots, use an APS-C-sized sensor cleaning swab with Eclipse optic cleaning fluid using a single smooth stroke.' },
+
+      // ── BATTERY & POWER ──
+      { id: 'f23', section: 'Getting Started', page: 14, heading: 'Battery and Power',
+        text: 'The X-E3 uses Fujifilm NP-W126S lithium-ion battery. The NP-W126S is compatible with earlier NP-W126 chargers and cameras, though the X-E3 cannot charge NP-W126 batteries at the full rate. Approximate battery life: 350 frames per charge (CIPA standard). Battery life is significantly reduced in cold temperatures and when using the LCD extensively. The X-E3 can be powered and charged via USB-C using a USB Power Delivery charger of at least 5V/1.5A. Battery level is displayed on the top LCD and in the viewfinder.' },
+
+      // ── INTERVAL TIMER ──
+      { id: 'f24', section: 'Shooting Features', page: 106, heading: 'Interval Timer Shooting',
+        text: 'INTERVAL TIMER SHOOTING allows automated shooting at set intervals for time-lapse photography. Configure via MENU > SHOOTING SETTING > INTERVAL TIMER SHOOTING. Set START TIME (delayed start or immediate), INTERVAL (minimum 1 second), NUMBER OF SHOTS (1-999 or unlimited). Press MENU/OK to start. For reliable long sessions: use a USB power bank connected via USB-C to maintain charge, set Manual exposure with fixed ISO and White Balance to prevent flickering, and use manual focus to prevent focus hunting. Combine resulting frames in video editing software at 24-60fps.' },
+
+      // ── WHITE BALANCE ──
+      { id: 'f25', section: 'Image Quality', page: 98, heading: 'White Balance',
+        text: 'WHITE BALANCE settings control colour temperature. AUTO: Camera evaluates and sets white balance for each frame. AUTO WHITE PRIORITY: Warmer white balance in artificial light. AUTO AMBIANCE PRIORITY: Preserves warm colour of incandescent light. CUSTOM: Measure white balance from a white or grey card (point camera at card, press MENU/OK from the Custom WB selection screen). KELVIN (K): Set specific colour temperature from 2500K to 10000K. White Balance can be fine-tuned on a Red-Blue/Magenta-Green grid (±9 positions on each axis) by pressing the right arrow after selecting any WB option.' },
+
+      // ── BRACKETING ──
+      { id: 'f26', section: 'Shooting Features', page: 103, heading: 'Bracketing',
+        text: 'The X-E3 offers four bracketing modes accessible via MENU > SHOOTING SETTING: AE BKT: Shoots a series of frames at different exposures. Set the number of frames and exposure step. Standard is 3 frames at ±1/3, ±2/3, or ±1 EV. FILM SIMULATION BKT: Shoots three frames simultaneously, each with a different Film Simulation applied. Select three simulations from the list. ISO BKT: Shoots frames at different ISO sensitivities. WB BKT: Shoots frames with White Balance shifted in different directions. Select bracketing mode via the DRIVE dial or MENU.' },
+
+      // ── FLASH ──
+      { id: 'f27', section: 'Flash', page: 120, heading: 'External Flash and High Speed Sync',
+        text: 'The X-E3 has a standard hot shoe compatible with Fujifilm EF-X series flashes and third-party TTL flashes with Fujifilm compatibility (such as Godox V1F, Nissin i60A). Maximum flash sync speed with mechanical shutter: 1/180 second. For High Speed Sync (HSS): the flash must support HSS (also called FP mode), and HSS must be enabled on the flash unit and on the camera under MENU > SHOOTING SETTING > FLASH SETTING > HIGH SPEED SYNC. With HSS enabled, any shutter speed up to 1/32000 second can be used with flash. Flash output is reduced in HSS mode as the flash fires multiple rapid pulses.' },
+
+      // ── PANORAMA ──
+      { id: 'f28', section: 'Shooting Features', page: 108, heading: 'Panorama Mode',
+        text: 'PANORAMA mode automatically stitches a series of images into a wide panorama. Activate via the DRIVE dial. Settings under MENU > SHOOTING SETTING > PANORAMA SETTING: ANGLE: 120 degrees (standard) or 180 degrees (ultra-wide). DIRECTION: left-to-right or right-to-left. To shoot: half-press to set exposure, then press fully and pan smoothly in the indicated direction. A progress bar shows the sweep progress. Panoramas are saved as large JPEG files. For best results, pan at a consistent speed and keep the camera level. A tripod is recommended but not required.' }
+
+    ],
+
+    // ─────────────────────────────────────────────────────────────
+    // ELECTROLUX KODGH70TXA — MANUAL CHUNKS
+    // ─────────────────────────────────────────────────────────────
+    'elux-kodgh70': [
+
+      // ── COOKING FUNCTIONS ──
+      { id: 'e1', section: 'Cooking Functions', page: 18, heading: 'SteamBake Function',
+        text: 'STEAMBAKE combines steam injection with conventional oven heating to produce professional baking results. The steam creates a humid environment in the first phase of baking, causing rapid oven spring and a thin, flexible crust. As the bake progresses, the steam dissipates and the crust sets and crisps. To use SteamBake: fill the water drawer (bottom-left of cavity) to MAX with fresh tap water (approximately 300ml). Set the function knob to the SteamBake symbol (water droplets with fan). SteamBake requires the water drawer to be filled before use. Do not use SteamBake without water in the drawer. Minimum recommended preheat at 230°C: 15 minutes.' },
+
+      { id: 'e2', section: 'Cooking Functions', page: 20, heading: 'SteamBake for Bread',
+        text: 'For artisan sourdough and crusty bread using SteamBake: preheat to 230°C with a full water drawer for at least 15 minutes. Load bread on Shelf Level 2 from the bottom, which provides optimal heat distribution. At 20 minutes, open the oven and remove the Dutch oven lid if using one, then reduce temperature to 210°C and switch to Fan Bake function. Continue baking for 20-25 minutes until crust is deep golden and internal temperature reaches 96-98°C. The internal switch from steam to dry heat is critical for crust development.' },
+
+      { id: 'e3', section: 'Cooking Functions', page: 22, heading: 'Fan Bake and Fan Forced',
+        text: 'FAN BAKE (symbol: fan with bottom element) circulates hot air using the fan and rear heating element, with the bottom element providing additional base heat. Recommended for most baked goods including bread, pastries, and roasting. Reduces recipe temperature by 15-20°C compared to conventional oven recipes. FAN FORCED (symbol: fan only) uses the fan and both elements at equal power, delivering the most even heat distribution suitable for multiple rack cooking. Use Fan Forced for dehydrating, cooking on multiple shelves simultaneously, or when uniform results across all areas of the oven are required.' },
+
+      { id: 'e4', section: 'Cooking Functions', page: 24, heading: 'Conventional Bake',
+        text: 'CONVENTIONAL BAKE (symbol: two horizontal bars top and bottom) uses the top and bottom elements without the fan. Produces a more intense heat gradient with a hotter base. Best for: fruit cakes and dense cakes that require slow even heat, cheesecakes where fan airflow can crack the surface, pastry bases requiring a fully cooked base, and bread in a tin where a browned crust is desired. Temperature ranges available: 30°C to 275°C. Conventional bake is the recommended mode for dishes sensitive to surface drying.' },
+
+      { id: 'e5', section: 'Cooking Functions', page: 26, heading: 'Grill Mode',
+        text: 'GRILL (symbol: zigzag line at top) activates the top grill element only at maximum power. The grill element is located on the ceiling of the oven cavity. For best grill results: preheat the grill for 5 minutes at full power before placing food. Use Shelf Level 4 (top position) to place food approximately 8-12cm from the grill element. Leave the oven door slightly ajar during grilling to prevent thermal cut-out and allow moisture to escape. Full grill position produces intense direct heat suitable for steaks, fish fillets, gratin finishing, and bread browning. Grill times: steak (2.5cm) approximately 4-5 minutes per side; salmon fillet 8-10 minutes total; gratin finish 3-5 minutes.' },
+
+      { id: 'e6', section: 'Cooking Functions', page: 28, heading: 'Pyrolytic Self-Clean',
+        text: 'PYROLYTIC SELF-CLEAN heats the oven cavity to approximately 500°C, incinerating all grease, food residue, and splatter into a fine white ash. Before starting: remove all oven racks, the water drawer, and any accessories as these will be permanently discoloured at pyrolytic temperatures. Standard racks are not pyrolytic-safe. Ensure adequate kitchen ventilation as burning residue produces smoke and odour. Once the pyrolytic cycle is started, the oven door locks automatically and cannot be opened until the cavity temperature drops below 200°C after the cycle. Cycle duration: approximately 2 to 2.5 hours. After cooling, wipe the fine white ash from all surfaces with a damp cloth.' },
+
+      { id: 'e7', section: 'Cooking Functions', page: 30, heading: 'SteamClean Function',
+        text: 'STEAMCLEAN is a 28-minute cleaning cycle that uses steam to loosen baked-on grease without the intensity of pyrolytic cleaning. Before using SteamClean: remove all racks and accessories. Pour 300ml of fresh water directly onto the oven floor (not into the water drawer). Set the function knob to the SteamClean symbol (steam with clock). The oven automatically sets 90°C and runs for 28 minutes. After the cycle completes and the oven cools below 40°C, wipe all surfaces with a soft cloth. SteamClean is suitable for regular maintenance cleaning and is not designed to remove heavy carbon deposits, which require pyrolytic cleaning.' },
+
+      { id: 'e8', section: 'Cooking Functions', page: 32, heading: 'Defrost Function',
+        text: 'DEFROST (symbol: snowflake) circulates room-temperature air using the fan only, with no heating elements active. This provides safe, consistent defrosting without beginning to cook the food. Place food on a paper towel-lined tray on Shelf Level 2 or 3. Defrosting times: 500g mince 90-120 minutes, single chicken breast (200g) 60-90 minutes, fish fillets 45-60 minutes. Do not use the defrost function for large joints or whole birds; these should be defrosted in the refrigerator overnight for food safety. After defrosting, cook food immediately and do not refreeze.' },
+
+      // ── SHELF POSITIONS ──
+      { id: 'e9', section: 'Cooking Guide', page: 36, heading: 'Shelf Position Guide',
+        text: 'The KODGH70TXA has 4 shelf positions numbered 1 (bottom) to 4 (top). SHELF 1 (bottom): Maximum base heat. Use for: pizza on a stone, pastry cases requiring a fully cooked base, quiches, and open tarts. SHELF 2 (second from bottom): Balanced heat distribution. Use for: most bread, cakes, casseroles, whole chicken, roasting trays. This is the default position for most recipes. SHELF 3 (second from top): More exposure to the top element. Use for: dishes requiring top browning, gratins, pasta bakes. SHELF 4 (top): Grill position only. Use exclusively with Grill function for steaks, fish, and browning finishes.' },
+
+      // ── MAINTENANCE ──
+      { id: 'e10', section: 'Maintenance', page: 52, heading: 'Descaling the Steam Generator',
+        text: 'Regular descaling is required to maintain steam performance. Descale every 200 hours of steam use or when the descale indicator appears. Use only Electrolux-approved descaling solution (part number E6OC0102) or food-safe citric acid. Do not use vinegar as it can damage internal components. Descaling procedure: (1) Fill the water drawer with the descaling solution diluted as directed, to the MAX line. (2) Set SteamBake function at 100°C for 20 minutes. (3) Empty and rinse the drawer, refill with fresh water to MAX. (4) Run SteamBake at 100°C for 10 minutes to flush the system. (5) Repeat the rinse cycle once more. Strong steam output after completion confirms successful descaling.' },
+
+      { id: 'e11', section: 'Maintenance', page: 55, heading: 'Replacing the Oven Light',
+        text: 'The oven lamp is located on the rear interior wall of the cavity behind a glass cover. To replace: (1) Switch off the oven at the mains supply and allow to cool completely (minimum 1 hour). (2) Turn the glass lamp cover anti-clockwise to remove. (3) Remove the failed lamp bulb. (4) Install replacement: the oven requires an E14 bayonet base, 25W, 300°C-rated halogen lamp. Standard household bulbs are not suitable and will fail immediately. (5) Replace the glass cover and secure by turning clockwise. (6) Test before reassembling any panels. Replacement bulbs are available from Electrolux spare parts or authorised retailers.' },
+
+      // ── TEMPERATURE CALIBRATION ──
+      { id: 'e12', section: 'Settings', page: 42, heading: 'Temperature Calibration',
+        text: 'The KODGH70TXA can be calibrated if cooking results suggest the oven temperature is inaccurate. To access calibration mode: with the oven off, press and hold the TEMPERATURE button for 5 seconds until the display shows CAL. Use the +/- buttons to adjust the offset, up to ±35°C. Press START/PAUSE to confirm and exit. To verify accuracy, use a calibrated oven thermometer placed on Shelf 2. Preheat to 180°C Fan Bake and check the thermometer reading after 20 minutes at temperature. The offset should match any consistent discrepancy found.' },
+
+      // ── TIMERS AND PROGRAMMES ──
+      { id: 'e13', section: 'Settings', page: 38, heading: 'Delayed Start and Cook Time',
+        text: 'The delayed start function allows programming the oven to begin cooking automatically at a future time. To programme: (1) Set the desired cooking function and temperature. (2) Press COOK TIME and enter the total duration of cooking using the +/- buttons. (3) Press END TIME and enter the time at which cooking should finish. The oven calculates the start time automatically. (4) Press START to confirm. The display shows the programmed end time and will count down to the start time. Important food safety: never use delayed start with raw meat, poultry, fish, dairy products, or any food that requires prompt refrigeration. Suitable for root vegetables, dried legumes, and casseroles with cooked meats.' },
+
+      { id: 'e14', section: 'Settings', page: 40, heading: 'Child Lock',
+        text: 'CHILD LOCK prevents unintended operation of the oven controls. To activate: press and hold the LOCK button (key symbol) for 3 seconds. The padlock icon appears on the display and all control buttons are disabled. The oven function and temperature cannot be changed while Child Lock is active. To deactivate: press and hold the LOCK button for 3 seconds again until the padlock icon disappears. It is recommended to activate Child Lock during pyrolytic cleaning cycles and SteamClean cycles to prevent accidental interruption. Child Lock does not affect the timer display.' },
+
+      // ── COOKING GUIDES ──
+      { id: 'e15', section: 'Cooking Guide', page: 60, heading: 'Roasting Chicken',
+        text: 'Roast chicken guide for the KODGH70TXA: Set Fan Forced at 220°C and preheat for 15 minutes. Place the chicken breast-side up in a roasting tray on Shelf Level 2. Roast at 220°C for 15 minutes to colour the skin, then reduce to 190°C for the remainder of cooking. Cooking time guide: 20 minutes per 500g plus 20 minutes resting time. For a 1.5kg chicken: approximately 60-70 minutes total cooking. The chicken is cooked when the thigh joint reaches an internal temperature of 75°C and juices run clear when the thickest part of the thigh is pierced. Rest for 15 minutes before carving.' },
+
+      { id: 'e16', section: 'Cooking Guide', page: 62, heading: 'Baking Cakes',
+        text: 'For best cake results in the KODGH70TXA: use Conventional Bake (not Fan) at 15-20°C below the recipe temperature to compensate for the oven\'s efficiency. Position the cake on Shelf Level 2 for balanced heat. Do not open the oven door during the first 20 minutes of baking as cold air will cause the cake to sink before the structure has set. Test for doneness with a clean skewer inserted into the centre - it should come out clean. Remove from the tin after 10 minutes resting to prevent steam from making the base soggy. For fruitcakes and dense cakes requiring longer baking, cover the top loosely with baking paper or foil after the first 30 minutes if browning too quickly.' },
+
+      { id: 'e17', section: 'Cooking Guide', page: 65, heading: 'Pizza Baking',
+        text: 'For crispy-base pizza: set Conventional Bake at 250°C (maximum). Place a pizza stone or heavy baking tray on Shelf Level 1 (bottom) during preheat. Allow at least 30 minutes preheat with the stone to ensure it is fully saturated with heat. Slide the pizza directly onto the preheated stone using a pizza peel dusted with semolina. Cook for 5-6 minutes until base is crisp and undercooked, then switch to Grill for 2 minutes to char the edges and melt the cheese. The key to a crisp base is maximum bottom heat from a preheated surface. Fan or convection modes reduce the base heat available.' },
+
+      { id: 'e18', section: 'Cooking Guide', page: 68, heading: 'SteamBake Vegetables and Fish',
+        text: 'SteamBake at low temperatures preserves nutrients and moisture in vegetables and fish better than dry heat methods. For vegetables: fill water drawer to MAX, set SteamBake to 100°C. Use a perforated tray on Shelf Level 2. Cooking times: asparagus 8-10 minutes, broccoli florets 10-12 minutes, sliced carrots 15-18 minutes, green beans 8-10 minutes. Do not add salt before steaming as it draws out moisture. For whole fish: score the skin, place on a lined tray with aromatics, set SteamBake to 180°C. Allow 12 minutes per 500g plus 2 minutes. Fish is cooked when flesh flakes easily from the bone and is opaque throughout.' },
+
+      { id: 'e19', section: 'Cooking Guide', page: 72, heading: 'Slow Roasting',
+        text: 'Low and slow cooking in the KODGH70TXA: use Conventional Bake (not Fan) at 140-160°C. Sear the meat in a hot pan on the stovetop before placing in the oven to develop colour and flavour. Cover the roasting vessel or wrap in foil for the first portion of cooking to retain moisture. Cooking times at 150°C: lamb shoulder (1.5kg) 4-5 hours, pork belly (1.2kg) 3-4 hours, beef brisket (1.5kg) 5-6 hours. Check that all meat reaches safe internal temperatures (lamb 70°C, pork 71°C, beef depending on preference). Rest covered in foil for 20-30 minutes before serving. Finish with 15 minutes at 220°C Fan Forced to crisp the exterior.' },
+
+      { id: 'e20', section: 'Cooking Guide', page: 74, heading: 'Bread Proving in Oven',
+        text: 'The oven can create an ideal proving environment for bread dough. Set the oven to the lowest temperature with SteamBake (approximately 30°C), which creates warmth and humidity. Alternatively, set Conventional to 30°C and place a bowl of boiling water on the bottom shelf. Place covered dough on Shelf Level 2. Keep the oven light on to add gentle warmth. Ideal proving temperature is 26-28°C with 70-80% humidity. Bulk fermentation is complete when dough has doubled in size. Shaped loaves are proved when a gentle poke with a floured finger springs back slowly (not immediately) and holds an indentation briefly.' },
+
+      // ── ENERGY ──
+      { id: 'e21', section: 'Settings', page: 44, heading: 'Energy Saving',
+        text: 'To reduce energy consumption with the KODGH70TXA: Fan Bake and Fan Forced reach operating temperature approximately 25% faster than Conventional due to air circulation, reducing preheat energy. Turn the oven off 10-15 minutes before the cooking time ends and allow residual heat to complete cooking. Batch cooking multiple dishes in one session is more efficient than separate sessions as the preheat energy is shared. Use the correct size baking vessel for the amount of food - oversized pans require heating additional thermal mass. The oven is most efficient when full, so plan to use available shelf space.' },
+
+      { id: 'e22', section: 'Troubleshooting', page: 80, heading: 'Uneven Baking',
+        text: 'If baking results are uneven: Check shelf position - Shelf 2 is correct for most baking. In Conventional mode, heat is stronger at the base; move up one shelf if base is over-browning. In Fan modes, heat is more even but can over-brown surfaces exposed directly to the rear element. Rotate trays halfway through baking if one side browns faster. Verify oven temperature with an oven thermometer (see Temperature Calibration section). Dark-coloured trays absorb more heat and may over-brown bases; use light-coloured or anodised aluminium trays for delicate baking. Overfilling the oven restricts air circulation in Fan modes.' },
+
+      { id: 'e23', section: 'Troubleshooting', page: 82, heading: 'Bread Not Rising',
+        text: 'If bread fails to rise properly in the oven: Verify yeast viability - fresh yeast and active dry yeast deteriorate quickly. Test by dissolving in warm water (35-38°C, not hotter) with a pinch of sugar; it should foam within 10 minutes. Water temperature above 42°C kills yeast. Ensure adequate proving time before baking - under-proved dough has insufficient gas development to produce good oven spring. Check oven temperature accuracy. An oven running cold results in slow initial rise and crust forming before maximum expansion. For sourdough, ensure the starter is at peak activity (should dome and begin to fall after feeding) before using.' },
+
+      { id: 'e24', section: 'Troubleshooting', page: 84, heading: 'Steam Not Working',
+        text: 'If steam output is poor or absent: Check water drawer is filled to MAX with fresh water. Do not use mineral water, filtered water with residue, or water with added substances. Descale the steam generator if it has not been descaled recently or if the descale indicator is shown (see Descaling section). Ensure the water drawer is fully inserted until it clicks. The water drawer has a directional valve that must engage correctly. If steam output remains poor after descaling, the steam generator may require professional servicing. Contact Electrolux Service on 13 13 50 (Australia).' }
+
+    ],
+
+    // ─────────────────────────────────────────────────────────────
+    // RESIDEO T6 / T6R SMART THERMOSTAT — MANUAL CHUNKS
+    // Source: Resideo T6/T6R Smart Thermostat User Guide EN2H32317085-020
+    // ─────────────────────────────────────────────────────────────
+    'resideo-t6': [
+
+      { id: 't1', section: 'Features Overview', page: 2, heading: 'T6/T6R Smart Thermostat Features',
+        text: 'The T6/T6R Smart Thermostat connects to the Internet so you can control your heating and stored hot water system from anywhere using the Honeywell Home App. Features include: remote viewing and changing of heating settings, time scheduling (daily or 5-2 day with 6 time periods per day), Geofencing (uses smartphone location to manage comfort when home or away), Smart Scheduling (combination of geofencing and time scheduling), group scheduling for multiple devices and locations, and boiler failure alerts via thermostat, app, and email. The free Honeywell Home App is available on the Apple App Store and Google Play.' },
+
+      { id: 't2', section: 'Display and Navigation', page: 4, heading: 'Quick Reference to the Display',
+        text: 'The T6/T6R display shows: the actual room temperature, the setpoint temperature, current time, Wi-Fi communication status, receiver module communication status, and the current schedule period. Key buttons: MENU button (touch to display options), SELECT button (touch to access sub-menus or confirm selection), ARROWS (navigate menus), PLUS/MINUS (change settings such as temperature and date), RETURN (go back to previous menu). The screen dims and enters idle mode 45 seconds after the last button touch. Touch any button to wake the screen.' },
+
+      { id: 't3', section: 'Menu Navigation', page: 5, heading: 'Main Menu Options',
+        text: 'The main menu contains: SCHEDULE (view or edit the heating schedule), WI-FI (setup or change Wi-Fi settings), CLEAN SCREEN (disables screen for 30 seconds for cleaning), LOCK (restricts access to thermostat interface), LANGUAGE (change display language), CLOCK (set the time and date), IDLE BRIGHTNESS (set backlight brightness for the idle screen), SCHEDULE OPTIONS (select the type of schedule), OPTIMISE (configure optimisation settings for start, stop, and delay), TEMPERATURE OFFSET (offsets the measured temperature reading), RESET (reset schedule, Wi-Fi, or HomeKit to factory defaults), DEVICE INFO (model, MAC code and device information).' },
+
+      { id: 't4', section: 'Wi-Fi Setup', page: 7, heading: 'Connecting to a Wi-Fi Network',
+        text: 'Before connecting ensure: your Wi-Fi is secure and set to 2.4GHz (the T6/T6R does not support 5GHz), you have your home Wi-Fi network name and password, and your smartphone Wi-Fi is switched on. To connect: (1) Download and install the Honeywell Home App from Google Play or Apple App Store. (2) Open the Honeywell Home App, press "Create Account" and follow the app instructions to register and add the thermostat. Once connected, the thermostat briefly displays SUCCESS and the connected symbol appears in the upper right corner. The thermostat automatically sets the time and date once connected to the internet. To disconnect or reconnect: follow instructions in the Honeywell Home App under Thermostat Configuration.' },
+
+      { id: 't5', section: 'Heating Control', page: 8, heading: 'Setting the System Mode',
+        text: 'To turn heating on or off, touch the power button on the thermostat. This toggles between Heating On and Off. Heating On controls the heating system to achieve the desired temperature. When set to Off the thermostat does not call for heat. To turn the heating schedule on or off, touch the schedule button. This deactivates or activates the heating programme. When the schedule is disabled the thermostat holds the last set temperature.' },
+
+      { id: 't6', section: 'Scheduling', page: 8, heading: 'Schedule Options and Default Schedule',
+        text: 'The T6/T6R Smart Thermostat has three schedule types. Daily (7-day): individual programme for each day of the week with up to 6 time periods per day. Week + Weekend: individual programme for weekdays (Monday to Friday) and a separate programme for Saturday and Sunday. Geofence: location-based temperature control using your smartphone location — can only be enabled and configured in the Honeywell Home App. The default factory schedule is: Monday-Friday: 6:30-8:00 at 19°C, 8:00-18:00 at 16°C, 18:00-22:30 at 21°C, 22:30-6:30 at 16°C. Saturday-Sunday: 8:00-10:00 at 19°C, 10:00-17:00 at 16°C, 17:00-23:00 at 21°C, 23:00-8:00 at 16°C.' },
+
+      { id: 't7', section: 'Scheduling', page: 10, heading: 'Adjusting a Programme Schedule',
+        text: 'To adjust the programme schedule: (1) Use the arrow buttons to navigate to SCHEDULE and press SELECT. (2) Select the day or days to adjust (e.g. MO-FR or SA-SU). (3) Select the time period to adjust — the selected period flashes. (4) Touch the time that needs to be changed and use arrows to adjust. (5) Touch the period temperature and use plus/minus to adjust. Press SELECT to confirm. (6) When all adjustments are complete, press SAVE to save. To delete a period, touch DELETE when the period is selected and confirm. All changes are lost if you do not press SAVE.' },
+
+      { id: 't8', section: 'Schedule Overrides', page: 11, heading: 'Overriding the Programme Schedule',
+        text: 'There are two ways to override the programme schedule. Hold Until (temporary override): touch plus or minus to adjust temperature. During adjustment the Until time appears. Touch the time to change it and use arrows to adjust the hold end time. The schedule resumes automatically when the Hold Until time expires — touch cancel to cancel earlier. Permanent Hold: touch the schedule button to deactivate the schedule and set a permanent temperature. Touch plus or minus to adjust. Touch the schedule button again to cancel the Permanent Hold and resume the regular schedule. In both modes the thermostat maintains the set temperature until the override ends.' },
+
+      { id: 't9', section: 'Geofencing', page: 12, heading: 'Geofencing Location-Based Scheduling',
+        text: 'The T6/T6R supports location-based scheduling which can intelligently override the time-based schedule. When enabled in the Honeywell Home App, it automatically adjusts heating based on whether you are home or away. Active geofence schedule is shown by a geofence icon in the top left corner. Home, Away, and Sleep statuses are each shown by separate icons. To configure the geofence schedule, see Create New Schedule in your Honeywell Home App. Geofencing is ideal if your schedule varies or you regularly depart and return at unpredictable times. It provides comfort when home and savings when away with no learning period required.' },
+
+      { id: 't10', section: 'Optimisation', page: 13, heading: 'Heating Optimisation Functions',
+        text: 'The T6/T6R has three heating optimisation functions in the OPTIMISE menu. Optimum Start: the thermostat learns over time how long your heating system takes to reach the desired temperature and starts it earlier so you are comfortable at the programmed time. The thermostat displays an indicator when it turns on early. Optimum Stop: saves energy by switching the heating off slightly before the normal programmed time. If the home is already at temperature you will not notice any difference, but energy is saved. Delayed Start: saves energy by slightly delaying the start of heating based on the difference between the programmed temperature and the actual room temperature.' },
+
+      { id: 't11', section: 'Security', page: 13, heading: 'Locking the Interface',
+        text: 'The T6/T6R has a lock function to restrict access. Two levels: PARTIAL allows only the setpoint temperature to be changed. FULL restricts all access to the thermostat interface. When the lock is activated a PIN is displayed — note this PIN as it is required to unlock. To lock: navigate to LOCK in the main menu and select the lock level. To unlock: enter the PIN when prompted. This feature is useful in shared homes, offices, or rental properties to prevent unauthorised temperature changes.' },
+
+      { id: 't12', section: 'Holiday Mode', page: 9, heading: 'Setting Holiday Mode',
+        text: 'Holiday mode saves energy while you are away for longer periods and restores comfortable settings before you return. To activate: in the Honeywell Home App go to Menu > Setting > Holiday and set your departure and return dates. HOLIDAY is displayed on the thermostat when active. You can cancel Holiday Mode on the thermostat by touching the schedule button, or in the Honeywell Home App at any time.' },
+
+      { id: 't13', section: 'Troubleshooting', page: 14, heading: 'Troubleshooting Common Problems',
+        text: 'Screen is blank: make sure power is switched on and check the circuit breaker and reset if necessary. Heating system does not respond: touch the power button to set system to Heat, make sure the set temperature is higher than the actual room temperature, check the circuit breaker, make sure the heating system is powered on, and check the Receiver Box is working and communicating. For the T6R wireless model: ensure the Receiver Box has mains power and that the signal between thermostat and receiver is adequate. Move the thermostat closer to the Receiver Box if needed.' },
+
+      { id: 't14', section: 'Troubleshooting', page: 14, heading: 'Error Alerts and Messages',
+        text: 'Alert messages on the T6/T6R display: WIFI RADIO ERROR — Wi-Fi radio is faulty, contact installer. INTERNAL MEMORY ERROR — internal memory is faulty, contact installer. THERMOSTAT TEMPERATURE SENSOR ERROR — temperature sensor is faulty, contact installer. INDOOR/OUTDOOR TEMPERATURE SENSOR ERROR (T6 only) — sensor not connected or wiring faulty, contact installer. NO INTERNET — internet connection lost, check your router. NO WIFI SIGNAL — Wi-Fi signal lost, check your router. WIFI NOT CONFIGURED — download the App and add your thermostat. NO RECEIVER BOX BINDING — no binding data stored, contact installer. NO COMMUNICATION RECEIVER BOX — move thermostat closer or contact installer. BOILER FAULT XX — boiler reported failure number XX, contact installer. BOILER HAS LOW WATER PRESSURE — top up the system pressure or contact installer. To dismiss an alert touch anywhere on the display.' },
+
+      { id: 't15', section: 'Support and Contact', page: 15, heading: 'Support Information',
+        text: 'For help with the T6/T6R Smart Thermostat visit getconnected.honeywellhome.com. UK telephone support: 0300 130 1299. The thermostat is manufactured by Resideo Technologies, Inc. The Honeywell Home trademark is used under license from Honeywell International Inc. The device is compatible with Apple HomeKit, and works with the Honeywell Home App available on iOS and Android. Wi-Fi connectivity requires a 2.4GHz network — 5GHz is not supported. For service or repair contact a qualified installer or Resideo authorised service centre.' }
+
+    ],
+
+    // ─────────────────────────────────────────────────────────────
+    // ELECTROLUX KODDP71XA — MANUAL CHUNKS
+    // Source: Electrolux KODDP71XA Oven User Manual (EN)
+    // URL: electrolux.com.sg/globalassets/appliances/ovens/koddp71xa/koddp71xa-um-eng.pdf
+    // ─────────────────────────────────────────────────────────────
+    'elux-koddp71': [
+
+      { id: 'k1', section: 'Heating Functions', page: 12, heading: 'All Heating Functions Overview',
+        text: 'The Electrolux KODDP71XA provides these heating functions: True Fan Cooking — bake on up to three shelf positions simultaneously, set temperature 20-40°C lower than for Conventional Cooking. True Fan Cooking PLUS — same as True Fan Cooking but adds steam (humidity) from the cavity embossment for better colour, crispy crust during baking, and more juiciness during reheating. Pizza Function — bake pizza with intensive browning and a crispy bottom. Conventional Cooking — bake and roast on one shelf position. Bottom Heat — bake cakes with crispy bottom and preserve food. Defrost — defrost vegetables and fruit without heat. Moist Fan Baking — energy-saving function using residual heat, temperature may differ from set temperature. Fast Grilling — grill thin pieces of food and toast bread. Turbo Grilling — roast large meat joints or poultry with bones, make gratins and brown. Pyrolysis — high-temperature self-cleaning that burns off residue leaving fine ash.' },
+
+      { id: 'k2', section: 'True Fan Cooking PLUS / SteamBake', page: 11, heading: 'Using Steam with True Fan Cooking PLUS',
+        text: 'True Fan Cooking PLUS adds steam during cooking. The steam comes from the cavity embossment — a reservoir built into the bottom-rear of the oven interior. To use: (1) Ensure the oven is cold before starting. (2) Fill the cavity embossment with tap water — maximum capacity is 250ml; do not overfill and do not refill during cooking or when the oven is hot. (3) Turn the function knob to True Fan Cooking PLUS. Press the Plus Steam button — the indicator turns on. (4) Turn the temperature control knob to set the desired temperature. (5) Preheat the empty oven for 10 minutes to build up humidity. (6) Place food in the oven and keep the door closed during cooking. (7) After cooking, open the door carefully as released steam can cause burns. (8) Once the oven is cold, remove remaining water from the cavity embossment and dry it with a soft cloth to prevent limestone deposits.' },
+
+      { id: 'k3', section: 'Shelf Positions and Accessories', page: 18, heading: 'Using Shelf Positions and Accessories',
+        text: 'The KODDP71XA has five shelf positions numbered from the bottom. Accessories: Wire shelf (for cookware, cake tins, roasts) — push between guide bars with feet pointing down. Baking tray (for cakes and biscuits) — push between guide bars of the shelf support. Grill/Roasting pan — to bake, roast, or collect dripping fat. Food sensor — measures food internal temperature. Telescopic runners — optional accessory for easier insertion and removal of shelves; do not oil the telescopic runners and always push them fully back before closing the oven door. For two-level cooking: push the baking tray between guide bars and place the wire shelf on guide bars above it. Always insert accessories fully and ensure the feet of the wire shelf point downward.' },
+
+      { id: 'k4', section: 'Pyrolytic Cleaning', page: 32, heading: 'Pyrolytic Self-Cleaning',
+        text: 'Pyrolysis cleans the oven at approximately 480°C, incinerating cooking residues into a fine white ash that can be wiped away. Critical safety steps before starting Pyrolysis: do NOT start Pyrolysis if the Plus Steam button is pressed in — this is a specific safety interlock on the KODDP71XA. Remove ALL accessories including wire shelves, side rails, baking trays, and any non-stick cookware. Remove excess food, oil, and grease from the cavity. Ensure good kitchen ventilation during and after cleaning. Remove pets especially birds from the area — they are highly sensitive to fumes from pyrolytic cleaning. The oven door locks automatically during the Pyrolysis cycle and stays locked until the oven cools to a safe temperature. Keep children away throughout. After cooling, wipe the fine white ash with a damp cloth.' },
+
+      { id: 'k5', section: 'Food Sensor', page: 16, heading: 'Using the Food Sensor (Core Temperature Sensor)',
+        text: 'The food sensor measures the internal temperature of food and automatically turns the oven off when the target temperature is reached. To use: set two temperatures — the oven temperature (minimum 120°C) and the target food core temperature (default 60°C). For meat, poultry, or fish: insert the sensor tip into the centre of the food in the thickest part; at least three-quarters of the sensor must be inside the food. Plug the sensor into the socket on the side wall of the oven. The display shows the sensor symbol. Set the desired core temperature using the control knob. Press to save or wait 10 seconds for automatic saving. When the food reaches the set temperature, the oven turns off and an alarm sounds for 2 minutes. Warning: the sensor becomes very hot during use — use oven gloves when handling.' },
+
+      { id: 'k6', section: 'Clock Functions', page: 13, heading: 'Duration, End Time, and Time Delay Functions',
+        text: 'Duration: automatically turns off the oven after a set cooking time. Set a heating function first, then press the clock button repeatedly until Duration flashes. Use the control knob to set minutes, then hours. End Time: sets the clock time at which the oven automatically turns off. Set a heating function, press clock button until End Time flashes, then set hour and minutes. Time Delay (Delayed Start): combines Duration and End Time — set how long to cook and when cooking should finish; the oven calculates the start time and turns on automatically. Minute Minder: a simple countdown timer that has no effect on oven operation; can be set when the oven is on or off. After 90% of the set time a warning signal sounds as a reminder.' },
+
+      { id: 'k7', section: 'Clock Functions', page: 13, heading: 'Setting the Time of Day',
+        text: 'After first connection to mains power, the display shows "hr" and 12:00 with the 12 flashing. Step 1: turn the control knob to set the hour. Step 2: press the confirm button. The display shows the set hour and 00 flashing for minutes. Step 3: turn the control knob to set the minutes. Step 4: press to confirm and the display shows the set time. To change the time later: press the clock button repeatedly while the oven is off until the time of day flashes, then adjust with the control knob. Note: the time of day can only be changed when the oven is off.' },
+
+      { id: 'k8', section: 'Additional Functions', page: 19, heading: 'Child Lock and Function Lock',
+        text: 'Child Lock prevents the oven from being turned on accidentally. To activate: ensure the function knob is in the off position, then press and hold the clock button and power button simultaneously for 2 seconds. A signal sounds and SAFE appears on the display — the oven is locked. To deactivate the Child Lock, repeat the same two-button combination. Function Lock prevents accidental changes to temperature and time settings while the oven is operating. To activate: with the oven running, press and hold the same two buttons for 2 seconds — LOC appears on the display for 5 seconds. To deactivate, repeat. When the oven is switched off while Function Lock is active, it automatically converts to Child Lock.' },
+
+      { id: 'k9', section: 'Additional Functions', page: 19, heading: 'Automatic Switch-Off and Residual Heat',
+        text: 'The KODDP71XA has an automatic safety switch-off. If a heating function operates and no settings are changed, the oven turns off after: 12.5 hours at 30-115°C; 8.5 hours at 120-195°C; 5.5 hours at 200-245°C; 3 hours at 250°C and above. After automatic switch-off, turn all knobs to the off position. The automatic switch-off does not apply when using: the Lamp function, Food Sensor operation, Duration timer, or End Time timer. Residual heat indicator: when you turn off the oven, the display shows the residual heat indicator if temperature is above 40°C. Use the control knob to check the current oven temperature. The cooling fan operates automatically during use to keep external surfaces cool and may continue running after switch-off.' },
+
+      { id: 'k10', section: 'Cooking Hints', page: 20, heading: 'Baking Cakes, Pastries and Bread',
+        text: 'For baking in the KODDP71XA: use Conventional Cooking or True Fan Cooking. When using True Fan Cooking, reduce the recipe temperature by 20-40°C. For moist cakes, use a deep baking pan as fruit juices cause permanent staining. Do not place any cookware directly on the oven bottom. If the cake browns on top before cooking through, use a lower shelf position next time or cover with foil from the halfway point. Do not open the oven door frequently during baking. Preheat the oven before placing food. For bread: True Fan Cooking PLUS (steam function) is excellent for crusty bread — the steam during the first phase allows the dough to rise fully and creates a thin, flexible crust before it sets. Use 150ml of water in the cavity embossment for bread.' },
+
+      { id: 'k11', section: 'Cooking Hints', page: 25, heading: 'Roasting and Grilling',
+        text: 'For roasting meat: use Turbo Grilling for large joints or poultry with bones, or Conventional Cooking for roasting on one level. Always roast with the oven door closed. Place meat on the wire shelf with the grill/roasting pan below to catch drips. For very fatty roasts use the deep baking pan directly. Always preheat the oven before placing meat inside. For grilling: use Fast Grilling for thin pieces and toast; use Turbo Grilling for browning and gratins. Preheat the grill for 3 minutes before use. Always grill at maximum temperature. The food sensor can monitor internal temperature during roasting — the oven turns off automatically when the target temperature is reached, preventing overcooking.' },
+
+      { id: 'k12', section: 'Cooking Hints', page: 28, heading: 'Steam Cooking Quantities Guide',
+        text: 'The True Fan Cooking PLUS steam function is ideal for bread, fish, vegetables, and reheating. Water amounts for the cavity embossment (maximum 250ml): use 100ml for reheating food and defrosting cooked items; use 150ml for baking bread rolls and smaller baked items; use 200ml for larger baked items, whole fish, or extended steam cooking. Always fill the cavity embossment before setting the function — never refill during cooking or when the oven is hot. After steam cooking, dry the cavity embossment with a soft cloth to remove limestone residue and prevent scale buildup, which affects steam performance over time.' },
+
+      { id: 'k13', section: 'Care and Cleaning', page: 31, heading: 'Daily Cleaning and Maintenance',
+        text: 'Clean the KODDP71XA oven after each use: allow the oven to cool completely first. Wipe the interior with a soft cloth and warm water with a mild detergent. Do not use abrasive cleaners, abrasive pads, or metal scrapers — especially on the glass door, as scratches can cause the glass to shatter. Do not use a steam cleaner on the appliance. Clean all accessories after each use and allow to dry completely before returning to the oven. After steam cooking: dry the cavity embossment with a soft cloth to prevent limestone scale. Do not store food or moist dishes in the oven after cooking finishes. For deeply soiled ovens, use the Pyrolysis self-cleaning function.' },
+
+      { id: 'k14', section: 'Care and Cleaning', page: 33, heading: 'Removing and Cleaning the Oven Door',
+        text: 'The KODDP71XA oven door has three glass panels which can be removed for cleaning. To remove the door: open it fully, then close to the first opening position (approximately 70° angle), hold the door at both sides and pull it away from the oven at an upward angle. Place the door outer-side down on a soft cloth on a stable flat surface. The door is heavy — always use both hands and take care. Remove the glass panels carefully, especially around the edges. Do not use the oven without all glass panels correctly installed. If any glass panel is damaged, stop using the oven and contact the Electrolux Authorised Service Centre immediately. To reinstall: reverse the removal steps.' },
+
+      { id: 'k15', section: 'Troubleshooting', page: 36, heading: 'Common Problems and Solutions',
+        text: 'Oven does not heat: check that the function knob is set to a heating function and the temperature is above the current oven temperature. Check the mains power supply and any isolating switches. Oven turns off automatically: the automatic safety switch-off has operated — this is normal; turn all knobs to the off position and reset the cooking programme. Condensation inside the oven: normal, especially with steam functions. Ventilate the kitchen during cooking. Smoke or odour during first use: new ovens produce odour during initial preheating — this is normal; ventilate the room. Uneven cooking: check shelf position and ensure the correct function is selected. Display shows unexpected symbols or the oven behaves unusually: contact the Electrolux Authorised Service Centre with your Model number, PNC, and Serial Number, all found on the rating plate on the oven cavity frame.' }
+
+    ]
+
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// RETRIEVAL ENGINE
+// Simple but effective: score chunks by keyword overlap with query,
+// weighted by section relevance. No vector DB needed for MVP.
+// ─────────────────────────────────────────────────────────────
+window.retrieveChunks = function(productId, query, topK = 6) {
+  const chunks = window.KNOWLEDGE_BASE.chunks[productId];
+  if (!chunks) return [];
+
+  const queryLower = query.toLowerCase();
+  const queryWords = queryLower
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .filter(w => !['the','and','how','what','why','can','do','does','is','are','my','to','a','an','for','of','in','on','it','this'].includes(w));
+
+  const scored = chunks.map(chunk => {
+    const text = (chunk.text + ' ' + chunk.heading + ' ' + chunk.section).toLowerCase();
+    let score = 0;
+
+    // Exact phrase bonus
+    if (text.includes(queryLower)) score += 20;
+
+    // Individual word matches (weighted by position in query)
+    queryWords.forEach((word, idx) => {
+      const weight = 1 + (queryWords.length - idx) * 0.1;
+      const count = (text.match(new RegExp(word, 'g')) || []).length;
+      score += count * weight;
+      // Heading/section matches score higher
+      if ((chunk.heading + ' ' + chunk.section).toLowerCase().includes(word)) score += 5;
+    });
+
+    // Boost for question-type keywords
+    const questionPatterns = [
+      { pattern: /clean|descale|maintain/, sections: ['maintenance', 'troubleshooting'] },
+      { pattern: /set|setup|configure|how|enable/, sections: ['settings', 'autofocus settings', 'custom settings'] },
+      { pattern: /cook|bake|roast|grill/, sections: ['cooking guide', 'cooking functions'] },
+      { pattern: /fix|problem|not working|error|issue|wrong/, sections: ['troubleshooting'] },
+      { pattern: /video|movie|record|film/, sections: ['video recording'] },
+    ];
+    questionPatterns.forEach(({ pattern, sections }) => {
+      if (pattern.test(queryLower)) {
+        if (sections.some(s => chunk.section.toLowerCase().includes(s))) score += 8;
+      }
+    });
+
+    return { ...chunk, score };
+  });
+
+  return scored
+    .filter(c => c.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+};
+
+// Convenience: find product by id or search term
+window.findProduct = function(query) {
+  const q = query.toLowerCase();
+  return window.KNOWLEDGE_BASE.products.find(p =>
+    p.id === q ||
+    p.name.toLowerCase().includes(q) ||
+    p.model.toLowerCase().includes(q) ||
+    p.tags.some(t => t.includes(q) || q.includes(t))
+  ) || null;
+};
+
+'use strict';
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const APP = {
+  product: null,          // selected product object
+  mode: 'read',           // 'read' | 'watch' | 'talk'
+  apiKey: '',             // user-provided Anthropic API key
+  conversation: [],       // [{role, content}] — shared across all modes
+  chunks: [],             // last retrieved chunks
+  isLoading: false,
+  // Video state
+  vidFrames: [],
+  vidIdx: 0,
+  vidPlaying: false,
+  vidElapsed: 0,
+  vidTotal: 0,
+  vidSpeed: 1,
+  vidLyr: 0,
+  rafId: null,
+  rafTs: null,
+  // Talk state
+  recognition: null,
+  isListening: false,
+  isSpeaking: false,
+  voiceOn: true,
+  synth: window.speechSynthesis || null,
+  voices: [],
+  preferredVoice: null,
+  keepAliveIv: null,
+  // PDF state
+  pdfChunks: null,        // user-uploaded PDF chunks
+  pdfName: '',
+};
+
+// ═══════════════════════════════════════════════
+// SYSTEM PROMPTS — one per mode
+// ═══════════════════════════════════════════════
+function getSystemPrompt(mode, product) {
+  const productName = product
+    ? `${product.brand} ${product.model} (${product.name})`
+    : 'the user\'s product';
+  const manualSource = product?.manual_source || 'the product manual';
+
+  const shared = `You have access to the following passages from the official ${manualSource}. These are the ONLY source of truth. Do not use any external knowledge about this product. If the answer is not in the provided passages, say so clearly and direct the user to contact the manufacturer.`;
+
+  if (mode === 'read') {
+    return `You are Project Lens, a product knowledge assistant.
+${shared}
+
+Instructions:
+- Answer the user's question clearly and precisely using only the provided manual passages.
+- Structure your response with numbered steps where applicable.
+- After your answer, always include a "Source:" line citing the exact section and page number(s) used. Format: "📎 Source: [Section Name], Page [X]"
+- If multiple sections are relevant, cite all of them.
+- If the answer is not in the passages, respond: "This specific information isn't covered in the passages I have for your ${productName}. I'd recommend checking the full manual or contacting ${product?.brand || 'the manufacturer'} support directly."
+- Be precise and factual. Do not embellish or add information not present in the passages.`;
+  }
+
+  if (mode === 'watch') {
+    return `You are Project Lens, a product tutorial script writer.
+${shared}
+
+Generate a structured video tutorial script based strictly on the provided manual passages.
+Respond ONLY with valid JSON — no markdown, no preamble, no explanation outside the JSON.
+
+Format:
+{
+  "title": "short tutorial title",
+  "frames": [
+    {
+      "title": "Step title (max 6 words)",
+      "narration": "Natural spoken narration for this step. 2-3 sentences. Warm, clear, instructive. Based strictly on the manual content.",
+      "key_action": "The single most important physical action in this step",
+      "visual_focus": "What the user should be looking at (button name, display, etc.)",
+      "duration_seconds": 9
+    }
+  ],
+  "total_duration_seconds": 54,
+  "source_citation": "Section Name, Page X"
+}
+
+Rules:
+- 6 frames exactly.
+- Every narration sentence must be grounded in the provided passages.
+- Do not invent steps not present in the manual.
+- If the question cannot be answered from the passages, return {"error": "not_in_manual"}.`;
+  }
+
+  if (mode === 'talk') {
+    return `You are a conversational assistant helping someone use their ${productName}.
+${shared}
+
+PERSONA — you are natural, curious, and collaborative:
+- You hold a real conversation, not a scripted Q&A. React to what the user actually said.
+- Ask clarifying questions before diving into steps when the question is ambiguous. For example: "Are you shooting in auto or manual mode?" or "Is the drawer fully clicked in, or does it feel loose?" One question at a time — never more.
+- Confirm understanding before moving on: "Got it — so the screen is showing the error after you press the button, right?"
+- Check in naturally mid-explanation: "Want me to keep going, or try that step first?"
+- If the user says "it didn't work" or "I'm stuck" — ask what they saw, don't just repeat the same instructions.
+- Mirror the user's energy: if they're frustrated, acknowledge it briefly before helping. If they're curious, be enthusiastic.
+
+VOICE FORMAT (this is spoken aloud):
+- Short sentences. Max 2-3 sentences per turn unless guiding a specific step.
+- No bullet points or numbered lists — say "first... then... after that..."
+- Natural contractions: "you'll", "it's", "let's", "that's".
+- When citing the manual, say it conversationally: "Your manual calls this..." or "According to the guide..."
+
+GROUNDING RULES:
+- Only draw from the provided manual passages. Never invent.
+- If the answer isn't there: "I don't see that covered in the part of your manual I have right now — worth checking ${product?.brand || 'the manufacturer'}'s support site for that one."
+- Never guess at safety-critical steps (temperatures, voltages, chemicals).
+- Keep each response under 75 words. Shorter is better for voice.`;
+  }
+
+  return shared;
+}
+
+// ═══════════════════════════════════════════════
+// API — routes through our proxy (no user key needed)
+// Falls back to direct Anthropic call if a key is stored
+// (useful for local development)
+// ═══════════════════════════════════════════════
+async function callClaude(messages, systemPrompt, maxTokens = 1200) {
+  // Detect environment: use proxy on Netlify, direct call if dev key present
+  const devKey = APP.apiKey || localStorage.getItem('pl_api_key') || '';
+  // Use proxy on any deployed HTTPS host (Vercel, Netlify, custom domain)
+  // Fall back to direct API call only on localhost with a dev key
+  const isLocal = window.location.protocol === 'file:' ||
+                  window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1';
+  const isNetlify = !isLocal;  // Renamed for backwards compat — covers ALL deployed hosts
+
+  if (isNetlify) {
+    // ── Production: proxy route (key stays server-side) ──
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, system: systemPrompt, maxTokens })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.text || '';
+
+  } else {
+    // ── Local dev: direct Anthropic call using stored key ──
+    if (!devKey) {
+      throw new Error('Enter your Anthropic API key in Settings to use locally, or deploy to Netlify for keyless access.');
+    }
+    APP.apiKey = devKey;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': devKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RETRIEVAL
+// ═══════════════════════════════════════════════
+function retrieve(query) {
+  if (APP.pdfChunks) {
+    // Simple keyword retrieval on user-uploaded PDF
+    const q = query.toLowerCase();
+    const words = q.split(/\s+/).filter(w => w.length > 3);
+    const scored = APP.pdfChunks.map((chunk, idx) => {
+      const text = chunk.text.toLowerCase();
+      let score = words.reduce((s, w) => s + (text.includes(w) ? 1 : 0), 0);
+      if (text.includes(q)) score += 10;
+      return { ...chunk, score, id: 'pdf-' + idx };
+    });
+    APP.chunks = scored.filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 6);
+  } else if (APP.product) {
+    APP.chunks = window.retrieveChunks(APP.product.id, query, 6);
+  }
+  return APP.chunks;
+}
+
+function chunksToContext(chunks) {
+  if (!chunks.length) return 'No relevant passages found.';
+  return chunks.map((c, i) =>
+    `[PASSAGE ${i + 1}${c.page ? ' — ' + (c.section || '') + ', Page ' + c.page : ''}]\n${c.text}`
+  ).join('\n\n');
+}
+
+// ═══════════════════════════════════════════════
+// READ MODE
+// ═══════════════════════════════════════════════
+async function submitReadQuery(question) {
+  if (!question.trim()) return;
+  const chunks = retrieve(question);
+
+  if (!chunks.length) {
+    appendMessage('assistant', "I don't have any relevant passages from your manual for that question. Try rephrasing or asking about a different feature.", 'read');
+    return;
+  }
+
+  const context = chunksToContext(chunks);
+  const userContent = `Manual passages:\n\n${context}\n\n---\nUser question: ${question}`;
+
+  APP.conversation.push({ role: 'user', content: userContent });
+
+  try {
+    const response = await callClaude(
+      APP.conversation,
+      getSystemPrompt('read', APP.product)
+    );
+    APP.conversation.push({ role: 'assistant', content: response });
+    appendMessage('assistant', response, 'read', chunks);
+  } catch (err) {
+    showError(err.message);
+    APP.conversation.pop();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// WATCH MODE
+// ═══════════════════════════════════════════════
+async function generateVideo(question) {
+  const chunks = retrieve(question);
+  const context = chunksToContext(chunks);
+
+  const prompt = `Manual passages:\n\n${context}\n\n---\nCreate a video tutorial answering: "${question}"`;
+
+  showVideoLoading(true);
+  try {
+    const raw = await callClaude(
+      [{ role: 'user', content: prompt }],
+      getSystemPrompt('watch', APP.product),
+      1000
+    );
+
+    let script;
+    try {
+      script = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      script = null;
+    }
+
+    if (!script || script.error || !script.frames?.length) {
+      showVideoLoading(false);
+      showError("Couldn't generate a video tutorial for that question. Try the Read mode instead.");
+      return;
+    }
+
+    APP.vidFrames = script.frames;
+    APP.vidTotal = script.frames.reduce((s, f) => s + (f.duration_seconds || 9), 0);
+    APP.vidIdx = 0;
+    APP.vidElapsed = 0;
+    APP.vidPlaying = false;
+
+    showVideoLoading(false);
+    buildVideoFrameStrip(script.frames);
+    showVidFrame(0, true);
+    document.getElementById('vid-citation').textContent = script.source_citation || '';
+    document.getElementById('vid-title').textContent = script.title || question;
+    startVid();
+  } catch (err) {
+    showVideoLoading(false);
+    showError(err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TALK MODE — Hybrid Conversation Engine
+//
+// Strategy:
+//   1. On first message, retrieve broad context (topK=8) and load it upfront.
+//      This covers most follow-up questions without re-fetching.
+//   2. On each subsequent turn, detect if the topic has shifted significantly
+//      by measuring keyword overlap with the current context.
+//   3. If overlap < threshold → topic shift detected → re-retrieve and inject
+//      fresh context, seamlessly, without interrupting the conversation.
+// ═══════════════════════════════════════════════
+let talkConversation = [];
+let lastTalkChunks = [];
+let talkContextKeywords = new Set(); // keywords covered by current context
+
+function extractKeywords(text) {
+  const stopwords = new Set(['the','and','how','what','why','can','do','does','is','are',
+    'my','to','a','an','for','of','in','on','it','this','that','i','me','you','we']);
+  return text.toLowerCase().split(/\W+/)
+    .filter(w => w.length > 3 && !stopwords.has(w));
+}
+
+function topicShiftDetected(text) {
+  if (talkContextKeywords.size === 0) return false;
+  const queryWords = extractKeywords(text);
+  if (queryWords.length === 0) return false;
+  // Count how many query keywords are covered by current context
+  const covered = queryWords.filter(w => talkContextKeywords.has(w)).length;
+  const overlapRatio = covered / queryWords.length;
+  // If fewer than 25% of query keywords exist in current context → topic shift
+  return overlapRatio < 0.25;
+}
+
+function updateContextKeywords(chunks) {
+  talkContextKeywords = new Set(
+    chunks.flatMap(c => extractKeywords(c.text + ' ' + c.section + ' ' + c.heading))
+  );
+}
+
+async function sendTalkMessage(text) {
+  if (!text.trim()) return;
+  appendTalkMessage('user', text);
+
+  const isFirstMessage = talkConversation.length === 0;
+  let refreshContext = isFirstMessage;
+
+  if (!isFirstMessage) {
+    // Detect significant topic shift
+    if (topicShiftDetected(text)) {
+      refreshContext = true;
+    }
+  }
+
+  if (refreshContext) {
+    // (Re-)retrieve: use topK=8 on first load for broad upfront coverage
+    const topK = isFirstMessage ? 8 : 6;
+    const chunks = retrieve(text);
+    if (chunks.length) {
+      lastTalkChunks = chunks;
+      updateContextKeywords(chunks);
+    }
+  }
+
+  const context = chunksToContext(lastTalkChunks);
+
+  if (isFirstMessage || refreshContext) {
+    // Inject context into conversation as a system-style user message
+    const note = refreshContext && !isFirstMessage
+      ? '[Topic changed — updated manual context loaded]\n'
+      : '';
+    talkConversation.push({
+      role: 'user',
+      content: `${note}[Manual context for this ${APP.product?.name || 'product'}]\n${context}\n\n---\n${text}`
+    });
+  } else {
+    // Follow-up on same topic — just send the text, context already in window
+    talkConversation.push({ role: 'user', content: text });
+  }
+
+  setTalkStatus('thinking');
+  try {
+    const response = await callClaude(
+      talkConversation,
+      getSystemPrompt('talk', APP.product),
+      280  // Kept short — this is voice, not an essay
+    );
+    talkConversation.push({ role: 'assistant', content: response });
+    appendTalkMessage('assistant', response);
+    if (APP.voiceOn) speakText(response);
+    setTalkStatus('idle');
+  } catch (err) {
+    setTalkStatus('idle');
+    showError(err.message);
+    talkConversation.pop();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SPEECH — Input (SpeechRecognition)
+// ═══════════════════════════════════════════════
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return false;
+
+  APP.recognition = new SR();
+  APP.recognition.continuous = false;
+  APP.recognition.interimResults = true;
+  APP.recognition.lang = 'en-AU';
+
+  APP.recognition.onstart = () => {
+    APP.isListening = true;
+    setMicState('listening');
+  };
+
+  APP.recognition.onresult = (e) => {
+    const transcript = [...e.results].map(r => r[0].transcript).join('');
+    const interim = !e.results[e.results.length - 1].isFinal;
+    const input = document.getElementById('talk-transcript-live');
+    if (input) {
+      input.textContent = transcript;
+      input.style.opacity = interim ? '0.6' : '1';
+    }
+    if (!interim) {
+      APP.isListening = false;
+      setMicState('idle');
+      if (transcript.trim()) sendTalkMessage(transcript.trim());
+      if (input) input.textContent = '';
+    }
+  };
+
+  APP.recognition.onerror = (e) => {
+    APP.isListening = false;
+    setMicState('idle');
+    if (e.error !== 'no-speech') showError('Microphone: ' + e.error);
+  };
+
+  APP.recognition.onend = () => {
+    APP.isListening = false;
+    setMicState('idle');
+  };
+
+  return true;
+}
+
+function toggleMic() {
+  if (!APP.recognition && !initSpeechRecognition()) {
+    // Fallback: show text input in talk mode
+    document.getElementById('talk-text-fallback').style.display = 'flex';
+    showError('Microphone not available. Use text input below, or open via HTTPS.');
+    return;
+  }
+  if (APP.isListening) {
+    APP.recognition.stop();
+  } else {
+    stopSpeech();
+    APP.recognition.start();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SPEECH — Output (SpeechSynthesis)
+// ═══════════════════════════════════════════════
+function loadVoices() {
+  if (!APP.synth) return;
+  APP.voices = APP.synth.getVoices();
+  APP.preferredVoice =
+    APP.voices.find(v => v.name === 'Google UK English Female') ||
+    APP.voices.find(v => v.name === 'Samantha') ||
+    APP.voices.find(v => v.name === 'Karen') ||
+    APP.voices.find(v => /google/i.test(v.name) && v.lang.startsWith('en')) ||
+    APP.voices.find(v => v.lang.startsWith('en-GB')) ||
+    APP.voices.find(v => v.lang.startsWith('en')) ||
+    null;
+}
+
+if (APP.synth) {
+  loadVoices();
+  APP.synth.onvoiceschanged = loadVoices;
+}
+
+function cleanForSpeech(text) {
+  return text
+    .replace(/📎[^\n]*/g, '')   // Remove citation lines
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/[*_`#►→←↑↓]/g, '')
+    .replace(/\d+\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function speakText(text) {
+  if (!APP.synth || !APP.voiceOn) return;
+  APP.synth.cancel();
+  if (APP.keepAliveIv) clearInterval(APP.keepAliveIv);
+
+  setTimeout(() => {
+    const utt = new SpeechSynthesisUtterance(cleanForSpeech(text));
+    utt.rate = 0.88;
+    utt.pitch = 1;
+    utt.volume = 1;
+    if (APP.preferredVoice) utt.voice = APP.preferredVoice;
+
+    utt.onstart = () => {
+      APP.isSpeaking = true;
+      setSpeakingIndicator(true);
+      APP.keepAliveIv = setInterval(() => {
+        if (APP.synth?.speaking && !APP.synth.paused) {
+          APP.synth.pause();
+          requestAnimationFrame(() => APP.synth?.resume());
+        }
+      }, 12000);
+    };
+    utt.onend = () => {
+      APP.isSpeaking = false;
+      setSpeakingIndicator(false);
+      if (APP.keepAliveIv) clearInterval(APP.keepAliveIv);
+    };
+    utt.onerror = () => {
+      APP.isSpeaking = false;
+      setSpeakingIndicator(false);
+    };
+    APP.synth.speak(utt);
+  }, 60);
+}
+
+function stopSpeech() {
+  if (APP.synth) APP.synth.cancel();
+  if (APP.keepAliveIv) clearInterval(APP.keepAliveIv);
+  APP.isSpeaking = false;
+  setSpeakingIndicator(false);
+}
+
+function toggleVoiceOutput() {
+  APP.voiceOn = !APP.voiceOn;
+  const btn = document.getElementById('voice-toggle');
+  if (btn) {
+    btn.textContent = APP.voiceOn ? '🔊' : '🔇';
+    btn.title = APP.voiceOn ? 'Voice on' : 'Voice off';
+  }
+  if (!APP.voiceOn) stopSpeech();
+}
+
+// ═══════════════════════════════════════════════
+// VIDEO ENGINE
+// ═══════════════════════════════════════════════
+function buildVideoFrameStrip(frames) {
+  const el = document.getElementById('vid-frames');
+  if (!el) return;
+  el.innerHTML = frames.map((f, i) => `
+    <div class="vf-chip ${i === 0 ? 'active' : ''}" onclick="jumpVidFrame(${i})">
+      <div class="vf-num">FRAME ${i + 1}</div>
+      <div class="vf-name">${f.title}</div>
+    </div>`).join('');
+  const tot = document.getElementById('vid-time-tot');
+  if (tot) tot.textContent = fmtTime(APP.vidTotal);
+}
+
+function showVidFrame(idx, instant) {
+  if (!APP.vidFrames.length) return;
+  const frame = APP.vidFrames[idx];
+  const layers = ['vm-svg-a', 'vm-svg-b'];
+  const next = APP.vidLyr === 0 ? 1 : 0;
+  const nextEl = document.getElementById(layers[next]);
+  const curEl = document.getElementById(layers[APP.vidLyr]);
+  if (!nextEl || !curEl) return;
+
+  nextEl.innerHTML = buildHDFrame(idx, frame, APP.vidFrames.length);
+
+  if (instant) {
+    curEl.style.opacity = '0';
+    nextEl.style.opacity = '1';
+    nextEl.className = 'vm-layer active';
+    curEl.className = 'vm-layer';
+  } else {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      nextEl.style.transition = 'opacity .6s ease';
+      curEl.style.transition = 'opacity .6s ease';
+      nextEl.style.opacity = '1';
+      curEl.style.opacity = '0';
+      setTimeout(() => {
+        nextEl.className = 'vm-layer active';
+        curEl.className = 'vm-layer';
+        nextEl.style.transition = '';
+        curEl.style.transition = '';
+      }, 660);
+    }));
+  }
+
+  APP.vidLyr = next;
+  APP.vidIdx = idx;
+
+  const badge = document.getElementById('vm-badge');
+  if (badge) badge.textContent = `${idx + 1} / ${APP.vidFrames.length}`;
+
+  const cap = document.getElementById('vm-caption');
+  if (cap) { cap.textContent = frame.key_action || frame.title; cap.classList.add('on'); }
+
+  document.querySelectorAll('.vf-chip').forEach((c, i) => c.classList.toggle('active', i === idx));
+
+  // Narrate this frame
+  if (APP.voiceOn && frame.narration) speakText(frame.narration);
+}
+
+function buildHDFrame(idx, frame, total) {
+  const isFuji = APP.product?.id === 'fuji-xe3';
+  const A = '#D97757';
+  const zones = isFuji
+    ? ['Q MENU', 'REAR DIAL', 'AF-L BUTTON', 'SHUTTER', 'EXP COMP DIAL', 'JOYSTICK']
+    : ['WATER DRAWER', 'FUNCTION KNOB', 'SHELF LEVEL 2', 'TEMP CONTROL', 'DISPLAY', 'DOOR HANDLE'];
+  const hlZone = zones[idx % zones.length];
+  const progress = (idx + 1) / total * 640;
+
+  if (isFuji) {
+    return `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="bg${idx}" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#1C1814"/><stop offset="100%" stop-color="#080706"/></radialGradient></defs>
+      <rect width="640" height="360" fill="url(#bg${idx})"/>
+      <rect x="80" y="70" width="480" height="230" rx="16" fill="#141210" stroke="#2A2720" stroke-width="2"/>
+      <rect x="80" y="42" width="480" height="36" rx="8" fill="#100E0C" stroke="#2A2720" stroke-width="2"/>
+      <circle cx="240" cy="195" r="88" fill="#0D0B09" stroke="#242018" stroke-width="2"/>
+      <circle cx="240" cy="195" r="66" fill="#090807" stroke="#1C1814"/>
+      <circle cx="240" cy="195" r="36" fill="#060504" stroke="#141210"/>
+      <circle cx="240" cy="195" r="14" fill="#020202"/>
+      <rect x="430" y="110" width="64" height="36" rx="9" fill="${hlZone==='Q MENU'?'rgba(217,119,87,.2)':'#1C1916'}" stroke="${hlZone==='Q MENU'?A:'#2A2720'}" stroke-width="${hlZone==='Q MENU'?'2':'1'}"/>
+      <text x="462" y="133" text-anchor="middle" fill="${hlZone==='Q MENU'?A:'#4A4038'}" font-family="system-ui" font-size="18" font-weight="800">Q</text>
+      ${hlZone==='Q MENU'?`<circle cx="462" cy="128" r="26" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <rect x="430" y="154" width="64" height="26" rx="8" fill="${hlZone==='AF-L BUTTON'?'rgba(217,119,87,.2)':'#1C1916'}" stroke="${hlZone==='AF-L BUTTON'?A:'#2A2720'}" stroke-width="${hlZone==='AF-L BUTTON'?'2':'1'}"/>
+      <text x="462" y="171" text-anchor="middle" fill="${hlZone==='AF-L BUTTON'?A:'#4A4038'}" font-family="ui-monospace" font-size="11" font-weight="600">AF-L</text>
+      ${hlZone==='AF-L BUTTON'?`<circle cx="462" cy="167" r="20" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <circle cx="500" cy="54" r="18" fill="${hlZone==='SHUTTER'?'rgba(217,119,87,.2)':'#1C1916'}" stroke="${hlZone==='SHUTTER'?A:'#2A2720'}" stroke-width="${hlZone==='SHUTTER'?'2':'1'}"/>
+      ${hlZone==='SHUTTER'?`<circle cx="500" cy="54" r="28" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <rect x="380" y="40" width="40" height="28" rx="6" fill="${hlZone==='EXP COMP DIAL'?'rgba(217,119,87,.2)':'#1C1916'}" stroke="${hlZone==='EXP COMP DIAL'?A:'#2A2720'}" stroke-width="${hlZone==='EXP COMP DIAL'?'2':'1'}"/>
+      <text x="400" y="58" text-anchor="middle" fill="${hlZone==='EXP COMP DIAL'?A:'#4A4038'}" font-family="ui-monospace" font-size="10">±EV</text>
+      <circle cx="386" cy="228" r="20" fill="#1C1916" stroke="#2A2720" stroke-width="${hlZone==='JOYSTICK'?'2':'1'}"/><circle cx="386" cy="228" r="9" fill="#141210"/>
+      <rect x="318" y="120" width="84" height="60" rx="5" fill="#07070A" stroke="#1C1916"/>
+      <text x="360" y="143" text-anchor="middle" fill="#3A3A5A" font-family="ui-monospace" font-size="10">1/500 f/2.0</text>
+      <text x="360" y="158" text-anchor="middle" fill="#2563EB" font-family="ui-monospace" font-size="9">ISO AUTO</text>
+      <text x="360" y="172" text-anchor="middle" fill="#3A3A5A" font-family="ui-monospace" font-size="8">CL.CHROME</text>
+      <rect x="0" y="318" width="640" height="42" fill="rgba(0,0,0,.75)"/>
+      <text x="16" y="344" fill="${A}" font-family="'Outfit',system-ui" font-size="13" font-weight="700">${frame.title}</text>
+      <text x="624" y="336" text-anchor="end" fill="rgba(255,255,255,.3)" font-family="ui-monospace" font-size="9">${idx+1}/${total}</text>
+      <rect x="0" y="358" width="${progress}" height="2" fill="${A}" rx="1"/>
+    </svg>`;
+  } else {
+    return `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="bg${idx}" cx="30%" cy="30%" r="70%"><stop offset="0%" stop-color="#181614"/><stop offset="100%" stop-color="#080706"/></radialGradient></defs>
+      <rect width="640" height="360" fill="url(#bg${idx})"/>
+      <rect x="40" y="18" width="462" height="302" rx="10" fill="#161412" stroke="#2A2720" stroke-width="2"/>
+      <rect x="72" y="56" width="298" height="212" rx="8" fill="#0D0B09" stroke="#221F18" stroke-width="2"/>
+      <rect x="88" y="72" width="266" height="180" rx="5" fill="#070706" stroke="#1A1814"/>
+      ${[0,1,2,3].map(i=>{const y=100+i*38;const hi=hlZone==='SHELF LEVEL 2'&&i===1;return `<rect x="90" y="${y}" width="262" height="${hi?5:2}" fill="${hi?A:'#1A1814'}" rx="1"/>${hi?`<text x="95" y="${y-5}" fill="${A}" font-family="ui-monospace" font-size="9" font-weight="700">◀ SHELF 2 — OPTIMAL</text>`:''}`}).join('')}
+      <rect x="72" y="288" width="100" height="18" rx="5" fill="${hlZone==='WATER DRAWER'?'rgba(217,119,87,.18)':'#1C1916'}" stroke="${hlZone==='WATER DRAWER'?A:'#2A2720'}" stroke-width="${hlZone==='WATER DRAWER'?'2':'1'}"/>
+      <text x="122" y="300" text-anchor="middle" fill="${hlZone==='WATER DRAWER'?A:'#4A4038'}" font-family="ui-monospace" font-size="10" font-weight="600">WATER</text>
+      ${hlZone==='WATER DRAWER'?`<circle cx="122" cy="297" r="24" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <rect x="516" y="18" width="98" height="302" fill="#111010" stroke="#1A1814"/>
+      <circle cx="565" cy="145" r="34" fill="${hlZone==='FUNCTION KNOB'?'rgba(217,119,87,.12)':'#1A1916'}" stroke="${hlZone==='FUNCTION KNOB'?A:'#2A2720'}" stroke-width="${hlZone==='FUNCTION KNOB'?'2':'1'}"/>
+      <circle cx="565" cy="145" r="14" fill="#0D0C0A" stroke="#1A1814"/>
+      <line x1="565" y1="145" x2="565" y2="115" stroke="${hlZone==='FUNCTION KNOB'?A:'#2563EB'}" stroke-width="3" stroke-linecap="round"/>
+      ${hlZone==='FUNCTION KNOB'?`<circle cx="565" cy="145" r="44" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <circle cx="565" cy="262" r="24" fill="${hlZone==='TEMP CONTROL'?'rgba(217,119,87,.12)':'#1A1916'}" stroke="${hlZone==='TEMP CONTROL'?A:'#2A2720'}" stroke-width="${hlZone==='TEMP CONTROL'?'2':'1'}"/>
+      <circle cx="565" cy="262" r="10" fill="#0D0C0A" stroke="#1A1814"/>
+      ${hlZone==='TEMP CONTROL'?`<circle cx="565" cy="262" r="32" fill="none" stroke="${A}" stroke-width="1.5" stroke-dasharray="5,3" opacity=".8"/>`:``}
+      <rect x="0" y="318" width="640" height="42" fill="rgba(0,0,0,.75)"/>
+      <text x="16" y="344" fill="${A}" font-family="'Outfit',system-ui" font-size="13" font-weight="700">${frame.title}</text>
+      <text x="624" y="336" text-anchor="end" fill="rgba(255,255,255,.3)" font-family="ui-monospace" font-size="9">${idx+1}/${total}</text>
+      <rect x="0" y="358" width="${progress}" height="2" fill="${A}" rx="1"/>
+    </svg>`;
+  }
+}
+
+function startVid() {
+  APP.vidPlaying = true;
+  APP.rafTs = null;
+  const pb = document.getElementById('vid-play-btn');
+  if (pb) pb.textContent = '⏸';
+  APP.rafId = requestAnimationFrame(rafTick);
+}
+
+function rafTick(ts) {
+  if (!APP.vidPlaying) return;
+  if (APP.rafTs && ts) {
+    const delta = (ts - APP.rafTs) / 1000 * APP.vidSpeed;
+    APP.vidElapsed = Math.min(APP.vidElapsed + delta, APP.vidTotal);
+
+    const pct = APP.vidTotal > 0 ? APP.vidElapsed / APP.vidTotal * 100 : 0;
+    const pf = document.getElementById('vid-prog-fill');
+    if (pf) pf.style.width = pct + '%';
+    const ct = document.getElementById('vid-time-cur');
+    if (ct) ct.textContent = fmtTime(APP.vidElapsed);
+
+    let acc = 0;
+    let targetIdx = 0;
+    for (let i = 0; i < APP.vidFrames.length; i++) {
+      acc += (APP.vidFrames[i].duration_seconds || 9);
+      if (APP.vidElapsed <= acc) { targetIdx = i; break; }
+      targetIdx = APP.vidFrames.length - 1;
+    }
+    if (targetIdx !== APP.vidIdx) showVidFrame(targetIdx, false);
+
+    if (APP.vidElapsed >= APP.vidTotal) {
+      APP.vidPlaying = false;
+      const pb = document.getElementById('vid-play-btn');
+      if (pb) pb.textContent = '▶';
+      return;
+    }
+  }
+  APP.rafTs = ts;
+  APP.rafId = requestAnimationFrame(rafTick);
+}
+
+function toggleVidPlay() {
+  APP.vidPlaying = !APP.vidPlaying;
+  const pb = document.getElementById('vid-play-btn');
+  if (pb) pb.textContent = APP.vidPlaying ? '⏸' : '▶';
+  if (APP.vidPlaying) { APP.rafTs = null; APP.rafId = requestAnimationFrame(rafTick); }
+  else { if (APP.rafId) cancelAnimationFrame(APP.rafId); }
+}
+
+function skipVidFrame(dir) {
+  const next = Math.max(0, Math.min(APP.vidFrames.length - 1, APP.vidIdx + dir));
+  let acc = 0;
+  for (let i = 0; i < next; i++) acc += (APP.vidFrames[i].duration_seconds || 9);
+  APP.vidElapsed = acc;
+  showVidFrame(next, false);
+}
+
+function jumpVidFrame(idx) {
+  let acc = 0;
+  for (let i = 0; i < idx; i++) acc += (APP.vidFrames[i].duration_seconds || 9);
+  APP.vidElapsed = acc;
+  showVidFrame(idx, false);
+}
+
+function seekVid(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  APP.vidElapsed = pct * APP.vidTotal;
+}
+
+function changeVidSpeed(val) { APP.vidSpeed = parseFloat(val) || 1; }
+
+function fmtTime(s) {
+  const sec = Math.floor(s || 0);
+  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+}
+
+// ═══════════════════════════════════════════════
+// PDF UPLOAD
+// ═══════════════════════════════════════════════
+async function handlePDFUpload(file) {
+  if (!file || !file.type.includes('pdf')) {
+    showError('Please upload a PDF file');
+    return;
+  }
+  showPDFLoading(true, 'Reading PDF…');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const chunks = [];
+    const totalPages = pdf.numPages;
+
+    for (let p = 1; p <= totalPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(i => i.str).join(' ').trim();
+      if (pageText.length < 30) continue;
+
+      // Chunk into ~400-word segments
+      const words = pageText.split(/\s+/);
+      for (let start = 0; start < words.length; start += 350) {
+        const text = words.slice(start, start + 400).join(' ');
+        if (text.length > 50) {
+          chunks.push({ text, page: p, section: `Page ${p}`, heading: `Page ${p}` });
+        }
+      }
+      if (p % 10 === 0) showPDFLoading(true, `Reading PDF… page ${p}/${totalPages}`);
+    }
+
+    APP.pdfChunks = chunks;
+    APP.pdfName = file.name;
+    APP.product = null;
+
+    showPDFLoading(false);
+    setPDFProduct(file.name, chunks.length);
+  } catch (err) {
+    showPDFLoading(false);
+    showError('Could not read PDF: ' + err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer = null;
+function showError(msg) {
+  showToast(msg, 'error');
+}
+function showToast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  const ic = document.getElementById('toast-icon');
+  const tx = document.getElementById('toast-msg');
+  if (!el) return;
+  if (toastTimer) clearTimeout(toastTimer);
+  ic.textContent = type === 'error' ? '⚠' : type === 'success' ? '✓' : 'ℹ';
+  tx.textContent = msg;
+  el.className = 'toast on ' + type;
+  toastTimer = setTimeout(() => { el.className = 'toast ' + type; }, 4000);
+}
+
+// ═══════════════════════════════════════════════
+// UI HELPERS (implemented in HTML)
+// ═══════════════════════════════════════════════
+function setMode(mode) {
+  APP.mode = mode;
+  stopSpeech();
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.mode-panel').forEach(p =>
+    p.style.display = p.dataset.mode === mode ? 'flex' : 'none');
+  if (mode === 'talk' && !APP.recognition) initSpeechRecognition();
+}
+
+function setProduct(product) {
+  APP.product = product;
+  APP.pdfChunks = null;
+  APP.conversation = [];
+  talkConversation = [];
+  lastTalkChunks = [];
+  APP.vidFrames = [];
+  const el = document.getElementById('active-product');
+  if (el) {
+    el.innerHTML = product
+      ? `<span class="prod-emoji">${product.emoji}</span> <strong>${product.name}</strong>`
+      : '';
+  }
+  document.getElementById('product-selector').style.display = 'none';
+  document.getElementById('main-interface').style.display = 'flex';
+  setMode(APP.mode);
+}
+
+function setPDFProduct(name, chunks) {
+  APP.product = null;
+  const el = document.getElementById('active-product');
+  if (el) el.innerHTML = `<span class="prod-emoji">📄</span> <strong>${name}</strong> <span style="color:var(--t3);font-size:11px">${chunks} passages</span>`;
+  document.getElementById('product-selector').style.display = 'none';
+  document.getElementById('main-interface').style.display = 'flex';
+  setMode(APP.mode);
+}
+
+function showVideoLoading(on) {
+  const el = document.getElementById('vm-loading');
+  if (el) el.style.display = on ? 'flex' : 'none';
+}
+
+function showPDFLoading(on, msg) {
+  const el = document.getElementById('pdf-loading');
+  if (el) el.style.display = on ? 'flex' : 'none';
+  const ml = document.getElementById('pdf-loading-msg');
+  if (ml && msg) ml.textContent = msg;
+}
+
+function setSpeakingIndicator(on) {
+  const el = document.getElementById('vm-speaking');
+  if (el) el.classList.toggle('on', on);
+  const ti = document.getElementById('talk-speaking-ind');
+  if (ti) ti.classList.toggle('on', on);
+}
+
+function setMicState(state) {
+  const btn = document.getElementById('mic-btn');
+  if (!btn) return;
+  btn.className = 'mic-btn ' + state;
+  btn.setAttribute('aria-label', state === 'listening' ? 'Listening… tap to stop' : 'Tap to speak');
+  const label = document.getElementById('mic-label');
+  if (label) label.textContent = state === 'listening' ? 'Listening…' : state === 'thinking' ? 'Thinking…' : 'Tap to speak';
+}
+
+function setTalkStatus(status) {
+  setMicState(status === 'thinking' ? 'thinking' : 'idle');
+}
+
+function appendMessage(role, text, mode, chunks) {
+  const list = document.getElementById('read-messages');
+  if (!list) return;
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  if (role === 'assistant') {
+    // Convert markdown-ish to HTML
+    const html = text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/📎 Source: (.+)/g, '<div class="msg-citation">📎 $1</div>')
+      .replace(/\n/g, '<br>');
+    div.innerHTML = html;
+    if (chunks?.length) {
+      const src = document.createElement('button');
+      src.className = 'view-source-btn';
+      src.textContent = 'View manual passages';
+      src.onclick = () => toggleSourcePanel(div, chunks);
+      div.appendChild(src);
+    }
+  } else {
+    div.textContent = text;
+  }
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+function toggleSourcePanel(parentDiv, chunks) {
+  const existing = parentDiv.querySelector('.source-panel');
+  if (existing) { existing.remove(); return; }
+  const panel = document.createElement('div');
+  panel.className = 'source-panel';
+  panel.innerHTML = chunks.map(c => `
+    <div class="source-chunk">
+      <div class="source-ref">${c.section || ''} ${c.page ? '· Page ' + c.page : ''} ${c.heading ? '· ' + c.heading : ''}</div>
+      <div class="source-text">${c.text}</div>
+    </div>`).join('');
+  parentDiv.appendChild(panel);
+}
+
+function appendTalkMessage(role, text) {
+  const list = document.getElementById('talk-messages');
+  if (!list) return;
+  const div = document.createElement('div');
+  div.className = 'talk-msg ' + role;
+  div.textContent = text;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Load pdf.js from CDN
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  script.onload = () => {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  };
+  document.head.appendChild(script);
+
+  // Load saved API key
+  const saved = localStorage.getItem('pl_api_key');
+  if (saved) {
+    APP.apiKey = saved;
+    const inp = document.getElementById('api-key-input');
+    if (inp) inp.value = saved;
+  }
+
+  // Mode buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  });
+
+  // API key save
+  const keyInp = document.getElementById('api-key-input');
+  if (keyInp) {
+    keyInp.addEventListener('change', () => {
+      APP.apiKey = keyInp.value.trim();
+      localStorage.setItem('pl_api_key', APP.apiKey);
+    });
+  }
+
+  // Product search
+  const search = document.getElementById('product-search');
+  if (search) {
+    search.addEventListener('input', () => {
+      const q = search.value.trim();
+      renderProductList(q);
+    });
+  }
+
+  // PDF drop zone
+  const dropzone = document.getElementById('pdf-dropzone');
+  const fileInput = document.getElementById('pdf-file-input');
+  if (dropzone && fileInput) {
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      if (f) handlePDFUpload(f);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handlePDFUpload(fileInput.files[0]);
+    });
+  }
+
+  // Read submit
+  const readForm = document.getElementById('read-form');
+  if (readForm) {
+    readForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const inp = document.getElementById('read-input');
+      const q = inp?.value.trim();
+      if (!q) return;
+      appendMessage('user', q, 'read');
+      inp.value = '';
+      const btn = readForm.querySelector('button[type=submit]');
+      if (btn) btn.disabled = true;
+      await submitReadQuery(q);
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  // Watch submit
+  const watchForm = document.getElementById('watch-form');
+  if (watchForm) {
+    watchForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const inp = document.getElementById('watch-input');
+      const q = inp?.value.trim();
+      if (!q) return;
+      inp.value = '';
+      const btn = watchForm.querySelector('button[type=submit]');
+      if (btn) btn.disabled = true;
+      await generateVideo(q);
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  // Talk text fallback submit
+  const talkForm = document.getElementById('talk-text-form');
+  if (talkForm) {
+    talkForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const inp = document.getElementById('talk-text-input');
+      const q = inp?.value.trim();
+      if (!q) return;
+      inp.value = '';
+      await sendTalkMessage(q);
+    });
+  }
+
+  renderProductList('');
+});
+
+function renderProductList(query) {
+  const list = document.getElementById('product-list');
+  if (!list) return;
+  const products = window.KNOWLEDGE_BASE.products.filter(p =>
+    !query || p.name.toLowerCase().includes(query.toLowerCase()) ||
+    p.tags.some(t => t.includes(query.toLowerCase()))
+  );
+  list.innerHTML = products.map(p => `
+    <div class="product-card" onclick="setProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <div class="prod-card-icon">${p.emoji}</div>
+      <div class="prod-card-body">
+        <div class="prod-card-name">${p.name}</div>
+        <div class="prod-card-cat">${p.category} · ${p.brand}</div>
+      </div>
+      <div class="prod-card-arrow">›</div>
+    </div>`).join('');
+
+  if (!products.length) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--t3);font-size:14px">No products match. Upload a PDF manual below.</div>`;
+  }
+}
+
+// ── Dev mode: show API key field if running locally ──────────
+window.addEventListener('DOMContentLoaded', () => {
+  const isLocal = window.location.protocol === 'file:' ||
+                  window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1';
+  const devPanel = document.getElementById('dev-api-panel');
+  if (devPanel) devPanel.style.display = isLocal ? 'block' : 'none';
+  const savedKey = localStorage.getItem('pl_api_key');
+  if (savedKey) {
+    APP.apiKey = savedKey;
+    const inp = document.getElementById('api-key-input');
+    if (inp) inp.value = savedKey;
+  }
+});
+
+</script>
+</body>
+</html>
